@@ -296,3 +296,4 @@ def _extract_plan(
         return None
 
     return find_action_set(0, set())
+

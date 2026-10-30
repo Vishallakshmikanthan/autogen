@@ -133,3 +133,4 @@ def h_ff(state_facts: frozenset[Fact], problem: PlanningProblem) -> float:
                     goals_to_support.add(pre)
 
     return float(len(relaxed_plan_actions))
+

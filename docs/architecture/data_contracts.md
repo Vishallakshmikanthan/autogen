@@ -532,3 +532,50 @@ class Plan:
 ```
 
 
+
+
+---
+
+## 12. Probabilistic Reasoning & Belief State Contracts (Module M10, SYS-09)
+
+```python
+from dataclasses import dataclass
+from typing import Any, Mapping, Protocol, Sequence, TypeVar, runtime_checkable
+import numpy as np
+
+T = TypeVar("T")
+S = TypeVar("S")
+
+@runtime_checkable
+class Distribution(Protocol[T]):
+    def prob(self, outcome: T) -> float: ...
+    def log_prob(self, outcome: T) -> float: ...
+    def sample(self, rng: np.random.Generator) -> T: ...
+    def support(self) -> tuple[T, ...]: ...
+    def entropy(self) -> float: ...
+
+@runtime_checkable
+class BeliefState(Protocol[S]):
+    def prob(self, state: S) -> float: ...
+    def update(self, observation: Any, action: Any | None = None) -> "BeliefState[S]": ...
+    def entropy(self) -> float: ...
+    def most_likely_states(self, k: int = 5) -> list[tuple[S, float]]: ...
+
+@dataclass(frozen=True, slots=True)
+class Factor:
+    variables: tuple[str, ...]
+    values: np.ndarray
+
+    def multiply(self, other: "Factor") -> "Factor": ...
+    def marginalize(self, var: str) -> "Factor": ...
+    def condition(self, var: str, val_idx: int) -> "Factor": ...
+    def normalize(self) -> "Factor": ...
+
+@dataclass(frozen=True, slots=True)
+class HMMResult:
+    forward_probs: np.ndarray
+    backward_probs: np.ndarray
+    smoothed_posteriors: np.ndarray
+    most_likely_path: tuple[int, ...]
+    log_likelihood: float
+```

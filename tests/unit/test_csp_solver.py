@@ -95,3 +95,4 @@ def test_min_conflicts_local_search_n_queens() -> None:
     assert solution.is_solved is True
     valid, reason = verify_csp_solution(csp, solution.assignment)
     assert valid is True, f"Min-conflicts solution invalid: {reason}"
+

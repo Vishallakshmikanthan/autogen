@@ -13,6 +13,7 @@ from autogen.agents.adversarial.stochastic_opponent import StochasticOpponent
 from autogen.agents.adversarial.strategic_forager import StrategicForager
 from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
 from autogen.agents.planning.planning_agent import PlanningAgent
+from autogen.agents.probabilistic.bayesian_hazard_agent import BayesianHazardAgent
 from autogen.agents.symbolic.logic_agent import LogicAgent
 from autogen.agents.baseline.model_based_reflex_agent import ModelBasedReflexAgent
 from autogen.agents.baseline.random_agent import RandomAgent
@@ -203,5 +204,19 @@ def _create_planning_agent(config: AgentConfig) -> BaseAgent:
 
 
 AgentRegistry.register("planning_agent", _create_planning_agent)
+
+
+def _create_bayesian_hazard_agent(config: AgentConfig) -> BaseAgent:
+    return BayesianHazardAgent(
+        agent_id=config.agent_id,
+        grid_width=config.custom_params.get("grid_width", 15),
+        grid_height=config.custom_params.get("grid_height", 15),
+        capabilities=config.capabilities,
+        hazard_penalty=config.custom_params.get("hazard_penalty", 100.0),
+        food_reward=config.custom_params.get("food_reward", 10.0),
+    )
+
+
+AgentRegistry.register("bayesian_hazard_agent", _create_bayesian_hazard_agent)
 
 

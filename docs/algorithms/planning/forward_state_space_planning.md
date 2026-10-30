@@ -98,3 +98,4 @@ function FORWARD-ASTAR-PLANNER(problem, heuristic):
 
 - Fikes, R. E., & Nilsson, N. J. (1971). STRIPS: A new approach to the application of theorem proving to problem solving. *Artificial Intelligence*, 2(3-4), 189-208.
 - Ghallab, M., Nau, D., & Traverso, P. (2004). *Automated Planning: Theory and Practice*. Elsevier.
+

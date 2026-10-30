@@ -39,3 +39,4 @@ def verify_csp_solution(
             return False, f"Constraint violation in scope ({scope_str}) on {c}"
 
     return True, None
+

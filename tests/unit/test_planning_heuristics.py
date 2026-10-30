@@ -41,3 +41,4 @@ def test_heuristic_detects_infinite_cost_dead_ends() -> None:
     assert math.isinf(h_max(problem.initial_facts, problem))
     assert math.isinf(h_add(problem.initial_facts, problem))
     assert math.isinf(h_ff(problem.initial_facts, problem))
+

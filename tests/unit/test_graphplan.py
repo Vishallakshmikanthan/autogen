@@ -55,3 +55,4 @@ def test_graphplan_unsolvable_leveled_off() -> None:
     plan = graphplan(problem, max_levels=5)
     assert plan.is_solved is False
     assert plan.is_proven_unsolvable is True
+

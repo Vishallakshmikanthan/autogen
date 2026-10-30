@@ -204,3 +204,4 @@ class ForwardStateSpacePlanner:
             ),
             is_proven_unsolvable=len(frontier) == 0,
         )
+

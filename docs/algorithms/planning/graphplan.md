@@ -69,3 +69,4 @@ function GRAPHPLAN(problem):
 ## 5. References
 
 - Blum, A. L., & Furst, M. L. (1997). Fast planning through planning graph analysis. *Artificial Intelligence*, 90(1-2), 281-300.
+

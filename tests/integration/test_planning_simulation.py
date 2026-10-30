@@ -66,3 +66,4 @@ def test_planning_agent_produces_authentic_traces() -> None:
         assert trace.agent_id == "planner_1"
         assert trace.algorithm_name == "ClassicalPlanning"
         assert "selected_action" in trace.rationale
+

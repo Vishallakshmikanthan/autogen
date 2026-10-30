@@ -76,3 +76,4 @@ def test_multi_agent_patrol_schedule_assignment() -> None:
     for task, (ag, slot) in solution.assignment.items():
         assert (ag, slot) not in assignments_by_agent_slot
         assignments_by_agent_slot.add((ag, slot))
+

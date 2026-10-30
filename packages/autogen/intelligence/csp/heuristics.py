@@ -84,3 +84,4 @@ def order_domain_values_naive(
 ) -> list[D]:
     """Preserves native domain ordering (for baseline ablation experiments)."""
     return list(csp.domains[var])
+

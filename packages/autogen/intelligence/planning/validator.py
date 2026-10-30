@@ -47,3 +47,4 @@ class PlanValidator:
             )
 
         return True, final_facts, None
+

@@ -121,3 +121,4 @@ def forward_check(
                 return None
 
     return pruned
+

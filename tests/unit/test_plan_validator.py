@@ -45,3 +45,4 @@ def test_plan_validator_rejects_mutated_plans() -> None:
     v2, _, err2 = PlanValidator.validate_plan(problem, mutated_swap)
     assert v2 is False, "Validator failed to catch swapped action dependency mutation!"
     assert err2 is not None
+

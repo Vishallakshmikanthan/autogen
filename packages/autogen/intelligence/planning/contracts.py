@@ -85,3 +85,4 @@ class Plan:
     @property
     def length(self) -> int:
         return len(self.actions)
+

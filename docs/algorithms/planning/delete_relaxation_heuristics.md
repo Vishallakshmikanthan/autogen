@@ -66,3 +66,4 @@ $h_{\text{FF}}$ avoids the extreme overcounting of $h_{\text{add}}$ while accoun
 
 - Bonet, B., & Geffner, H. (2001). Planning as heuristic search. *Artificial Intelligence*, 129(1-2), 5-33.
 - Hoffmann, J., & Nebel, B. (2001). The FF planning system: Fast plan generation through heuristic search. *Journal of Artificial Intelligence Research*, 14, 253-302.
+

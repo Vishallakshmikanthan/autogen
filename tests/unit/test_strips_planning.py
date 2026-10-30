@@ -97,3 +97,4 @@ def test_unsolvable_planning_problem_detected() -> None:
 
     assert plan.is_solved is False
     assert plan.is_proven_unsolvable is True
+

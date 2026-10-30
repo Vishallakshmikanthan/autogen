@@ -124,3 +124,4 @@ def create_survival_crafting_problem(
         goal_facts=goal_facts,
         actions=tuple(actions),
     )
+
