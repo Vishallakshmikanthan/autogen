@@ -113,3 +113,4 @@ class UtilityAgent(BaseAgent):
         self.belief_filter = GridBeliefFilter(width=self.grid_width, height=self.grid_height)
         self.latest_trace = None
         self._step_counter = 0
+

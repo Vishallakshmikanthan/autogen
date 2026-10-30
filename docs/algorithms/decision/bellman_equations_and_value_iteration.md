@@ -96,3 +96,4 @@ function VALUE-ITERATION(mdp, theta):
 
 - Bellman, R. (1957). *Dynamic Programming*. Princeton University Press.
 - Sutton, R. S., & Barto, A. G. (2018). *Reinforcement Learning: An Introduction* (2nd ed.), Chapter 4.
+

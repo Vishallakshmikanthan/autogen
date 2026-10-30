@@ -74,3 +74,4 @@ def argmax_expected_utility(
 
     best_action = max(candidate_actions, key=lambda a: utilities[a])
     return best_action, utilities[best_action], utilities
+

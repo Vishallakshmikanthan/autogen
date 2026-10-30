@@ -68,3 +68,4 @@ The exact solution $(V^*, Q^*, \pi^*)$ is serialized to JSON/NPZ with schema:
 }
 ```
 This artifact serves as the ground truth oracle against which Q-learning, SARSA, and DQN convergence will be tested in Module M13.
+

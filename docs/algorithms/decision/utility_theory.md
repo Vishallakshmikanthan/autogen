@@ -33,3 +33,4 @@ $$
 EU(a) = \sum_{s \in \mathcal{S}} b(s) \sum_{s' \in \mathcal{S}} P(s' \mid s, a) U(s')
 $$
 This forms the foundational transition from belief filtering (M10) to decision-theoretic action selection (M11) and POMDPs.
+

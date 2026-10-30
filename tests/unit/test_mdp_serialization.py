@@ -30,3 +30,4 @@ def test_mdp_solution_serialization_round_trip(tmp_path) -> None:
     assert sol_original.iterations == sol_loaded.iterations
     assert sol_original.state_labels == sol_loaded.state_labels
     assert sol_original.action_labels == sol_loaded.action_labels
+

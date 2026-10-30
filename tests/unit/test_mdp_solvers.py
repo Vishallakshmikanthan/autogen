@@ -127,3 +127,4 @@ def test_value_iteration_policy_iteration_equivalence() -> None:
     # Values must match to high numerical precision
     assert np.max(np.abs(sol_vi.v_star - sol_pi.v_star)) < 1e-8
     assert (sol_vi.policy == sol_pi.policy).all()
+

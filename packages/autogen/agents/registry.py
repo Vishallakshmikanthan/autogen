@@ -247,3 +247,21 @@ def _create_utility_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("utility_agent", _create_utility_agent)
 
 
+def _create_learned_perception_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.ml.learned_perception_agent import LearnedPerceptionAgent
+    from autogen.intelligence.ml.applications import LearnedPerceptionComponent
+
+    comp = config.custom_params.get("perception_component")
+    if comp is None:
+        comp = LearnedPerceptionComponent()
+    return LearnedPerceptionAgent(
+        agent_id=config.agent_id,
+        perception_component=comp,
+        capabilities=config.capabilities,
+        danger_threshold=config.custom_params.get("danger_threshold", 0.40),
+    )
+
+
+AgentRegistry.register("learned_perception_agent", _create_learned_perception_agent)
+
+

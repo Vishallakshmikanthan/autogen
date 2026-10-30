@@ -42,3 +42,4 @@ def test_expected_utility_meu_selection() -> None:
     assert best_act == "B"
     assert abs(max_eu - 60.0) < 1e-10
     assert abs(all_eu["A"] - 50.0) < 1e-10
+

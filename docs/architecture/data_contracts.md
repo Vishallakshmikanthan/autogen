@@ -630,3 +630,64 @@ class UtilityWeights:
 class UtilityFunction(Protocol[S]):
     def __call__(self, state: S) -> float: ...
 ```
+
+---
+
+## 14. Classical Machine Learning Contracts (Module M12, SYS-11)
+
+```python
+from dataclasses import dataclass, field
+from typing import Any, Mapping, Protocol, runtime_checkable
+import numpy as np
+
+class DataLeakageError(ValueError): ...
+
+@dataclass(frozen=True, slots=True)
+class Dataset:
+    features: np.ndarray          # shape (N, D), dtype float64
+    targets: np.ndarray           # shape (N,) or (N, K)
+    feature_names: tuple[str, ...] = ()
+    group_ids: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int32))
+
+@dataclass(frozen=True, slots=True)
+class SplitResult:
+    train_indices: np.ndarray
+    val_indices: np.ndarray
+    test_indices: np.ndarray
+    train_groups: frozenset[Any]
+    val_groups: frozenset[Any]
+    test_groups: frozenset[Any]
+
+@dataclass(frozen=True, slots=True)
+class ModelMetadata:
+    model_name: str
+    version: str
+    hyperparameters: Mapping[str, Any]
+    data_hash: str
+    created_at_iso: str
+    feature_names: tuple[str, ...] = ()
+
+@runtime_checkable
+class Estimator(Protocol):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> Any: ...
+
+@runtime_checkable
+class Classifier(Estimator, Protocol):
+    def predict(self, X: np.ndarray) -> np.ndarray: ...
+    def predict_proba(self, X: np.ndarray) -> np.ndarray: ...
+
+@runtime_checkable
+class Regressor(Estimator, Protocol):
+    def predict(self, X: np.ndarray) -> np.ndarray: ...
+
+@runtime_checkable
+class Transformer(Protocol):
+    def fit(self, X: np.ndarray) -> Any: ...
+    def transform(self, X: np.ndarray) -> np.ndarray: ...
+    def fit_transform(self, X: np.ndarray) -> np.ndarray: ...
+
+@runtime_checkable
+class Clusterer(Protocol):
+    def fit(self, X: np.ndarray) -> Any: ...
+    def predict(self, X: np.ndarray) -> np.ndarray: ...
+```

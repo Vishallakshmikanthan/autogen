@@ -99,3 +99,4 @@ class MDPAgent(BaseAgent):
         self._last_observation = None
         self.latest_trace = None
         self._step_counter = 0
+

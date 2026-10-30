@@ -59,3 +59,4 @@ def test_utility_agent_decides_meu_action() -> None:
     assert trace is not None
     assert trace.algorithm_name == "MultiAttributeUtility"
     assert "best_eu" in trace.metrics
+
