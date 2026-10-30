@@ -343,6 +343,57 @@ class SearchResult(Generic[S, A]):
     nodes_generated: int
     max_frontier_size: int
     runtime_seconds: float
+
+
+---
+
+## 9. Adversarial Search & Game Theory Contracts (Module M07)
+
+### 9.1 Adversarial Sequential Game Protocol
+```python
+class AdversarialGame(Protocol[S, A]):
+    @property
+    def initial_state(self) -> S: ...
+    def player(self, state: S) -> int: ...
+    def legal_actions(self, state: S) -> list[A]: ...
+    def successor(self, state: S, action: A) -> S: ...
+    def is_terminal(self, state: S) -> bool: ...
+    def utility(self, state: S, player: int) -> float: ...
+    def chance_outcomes(self, state: S, action: A) -> list[tuple[S, float]]: ...
+
+class AdversarialAlgorithm(Protocol[S, A]):
+    def search(
+        self,
+        game: AdversarialGame[S, A],
+        state: S,
+        max_depth: int,
+        eval_fn: EvaluationFunction[S],
+    ) -> AdversarialSearchResult[A]: ...
+```
+
+### 9.2 Normal-Form Game Contract
+```python
+@dataclass(slots=True)
+class NormalFormGame:
+    players: list[str]
+    actions: list[list[str]]
+    payoff_matrices: list[np.ndarray]
+
+    @property
+    def num_players(self) -> int: ...
+    def payoff(self, player_idx: int, action_indices: Sequence[int]) -> float: ...
+    def expected_payoff(self, player_idx: int, strategy_profile: Sequence[np.ndarray]) -> float: ...
+
+@dataclass(slots=True)
+class MixedStrategyProfile:
+    probabilities: list[np.ndarray]
+    expected_payoffs: list[float] = field(default_factory=list)
+
+    @property
+    def is_pure(self) -> bool: ...
+    def pure_action_indices(self) -> list[int] | None: ...
+```
+
 ```
 
 

@@ -39,6 +39,7 @@ class PygameViewer:
         self.show_trails = True
         self.show_heatmaps = False
         self.show_collisions = True
+        self.show_hunt_tree = True
 
         self._pygame: Any = None
         self._screen: Any = None
@@ -123,6 +124,8 @@ class PygameViewer:
                     self.show_heatmaps = not self.show_heatmaps
                 elif event.key == self._pygame.K_c:
                     self.show_collisions = not self.show_collisions
+                elif event.key == self._pygame.K_p:
+                    self.show_hunt_tree = not self.show_hunt_tree
                 elif event.key == self._pygame.K_TAB:
                     # Cycle through available agent IDs
                     if state.agents:
@@ -313,6 +316,18 @@ class PygameViewer:
         candidates = trace.rationale.get("candidate_actions", {})
         for act, sc in list(candidates.items())[:6]:
             lines.append(f" {act:8s}: {sc:.2f}")
+
+        if self.show_hunt_tree and state.lookahead_tree:
+            lines.append("--- Hunt Lookahead Tree ---")
+            tree = state.lookahead_tree
+            r_val = tree.get("value", 0.0)
+            r_act = tree.get("best_action", "N/A")
+            lines.append(f" Root val: {r_val} act: {r_act}")
+            for child in tree.get("children", [])[:4]:
+                act = child.get("best_action", "N/A")
+                val = child.get("value", 0.0)
+                pruned = " [PRUNED]" if child.get("pruned") else ""
+                lines.append(f"  -> {act}: {val:.1f}{pruned}")
 
         mem_used = trace.rationale.get("memory_used", [])
         if mem_used:

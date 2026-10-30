@@ -7,6 +7,10 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from autogen.agents.adversarial.predator_agent import PredatorAgent
+from autogen.agents.adversarial.prey_agent import PreyAgent
+from autogen.agents.adversarial.stochastic_opponent import StochasticOpponent
+from autogen.agents.adversarial.strategic_forager import StrategicForager
 from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
 from autogen.agents.baseline.model_based_reflex_agent import ModelBasedReflexAgent
 from autogen.agents.baseline.random_agent import RandomAgent
@@ -77,8 +81,8 @@ class AgentRegistry:
         factory_or_cls = cls.get(config.agent_type)
         if isinstance(factory_or_cls, type) and issubclass(factory_or_cls, BaseAgent):
             # Inspect constructor arguments
-            if factory_or_cls is RandomAgent:
-                return factory_or_cls(
+            if issubclass(factory_or_cls, RandomAgent):
+                return RandomAgent(
                     agent_id=config.agent_id,
                     seed=config.seed,
                     capabilities=config.capabilities,
@@ -125,3 +129,54 @@ def _create_goal_based_agent(config: AgentConfig) -> BaseAgent:
 
 
 AgentRegistry.register("goal_based", _create_goal_based_agent)
+
+
+def _create_predator_agent(config: AgentConfig) -> BaseAgent:
+    return PredatorAgent(
+        agent_id=config.agent_id,
+        capabilities=config.capabilities,
+        max_lookahead_depth=config.custom_params.get("max_lookahead_depth", 3),
+        target_prey_id=config.custom_params.get("target_prey_id"),
+    )
+
+
+AgentRegistry.register("predator", _create_predator_agent)
+
+
+def _create_prey_agent(config: AgentConfig) -> BaseAgent:
+    return PreyAgent(
+        agent_id=config.agent_id,
+        capabilities=config.capabilities,
+        max_lookahead_depth=config.custom_params.get("max_lookahead_depth", 3),
+        use_expectimax=config.custom_params.get("use_expectimax", False),
+        predator_id=config.custom_params.get("predator_id"),
+    )
+
+
+AgentRegistry.register("prey", _create_prey_agent)
+
+
+def _create_stochastic_opponent(config: AgentConfig) -> BaseAgent:
+    return StochasticOpponent(
+        agent_id=config.agent_id,
+        seed=config.seed,
+        capabilities=config.capabilities,
+        action_weights=config.custom_params.get("action_weights"),
+    )
+
+
+AgentRegistry.register("stochastic_opponent", _create_stochastic_opponent)
+
+
+def _create_strategic_forager(config: AgentConfig) -> BaseAgent:
+    return StrategicForager(
+        agent_id=config.agent_id,
+        capabilities=config.capabilities,
+        game_type=config.custom_params.get("game_type", "hawk_dove"),
+        strategy_mode=config.custom_params.get("strategy_mode", "mixed_nash"),
+        seed=config.seed,
+    )
+
+
+AgentRegistry.register("strategic_forager", _create_strategic_forager)
+

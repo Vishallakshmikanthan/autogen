@@ -37,3 +37,4 @@ Let $\Delta x = |x_1 - x_2|$ and $\Delta y = |y_1 - y_2|$.
    $$h_{\text{Chebyshev}}(p_1, p_2) = c_{\min} \cdot \max(\Delta x, \Delta y)$$
 4. **Scaled Octile:**
    $$h_{\text{Octile}}(p_1, p_2) = c_{\min} \cdot \left(\max(\Delta x, \Delta y) + (\sqrt{2} - 1) \min(\Delta x, \Delta y)\right)$$
+

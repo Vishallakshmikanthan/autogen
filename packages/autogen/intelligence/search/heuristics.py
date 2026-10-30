@@ -79,3 +79,4 @@ def octile_distance(
 def null_heuristic(state: object) -> float:
     """Zero heuristic h(s) = 0.0. Reduces A* to Dijkstra / Uniform-Cost Search."""
     return 0.0
+

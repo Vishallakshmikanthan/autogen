@@ -1,0 +1,71 @@
+{
+  "tournaments": {
+    "PrisonersDilemma": {
+      "TitForTat": 2.436,
+      "GrimTrigger": 2.568,
+      "AlwaysCooperate": 2.088,
+      "AlwaysDefect": 2.296,
+      "RandomStrategy": 1.896
+    },
+    "HawkDove": {
+      "TitForTat": 0.028,
+      "GrimTrigger": 0.004,
+      "AlwaysCooperate": 0.52,
+      "AlwaysDefect": 1.352,
+      "RandomStrategy": 1.64
+    },
+    "StagHunt": {
+      "TitForTat": 4.188,
+      "GrimTrigger": 4.2,
+      "AlwaysCooperate": 3.48,
+      "AlwaysDefect": 3.0,
+      "RandomStrategy": 2.456
+    }
+  },
+  "depth_sweep": {
+    "depth_1": {
+      "capture_rate": 0.0,
+      "capture_ci_low": 0.0,
+      "capture_ci_high": 0.0,
+      "mean_survival_steps": 50.0,
+      "survival_ci_low": 50.0,
+      "survival_ci_high": 50.0,
+      "avg_nodes_per_step": 5.0
+    },
+    "depth_2": {
+      "capture_rate": 0.0,
+      "capture_ci_low": 0.0,
+      "capture_ci_high": 0.0,
+      "mean_survival_steps": 50.0,
+      "survival_ci_low": 50.0,
+      "survival_ci_high": 50.0,
+      "avg_nodes_per_step": 14.0
+    },
+    "depth_3": {
+      "capture_rate": 0.0,
+      "capture_ci_low": 0.0,
+      "capture_ci_high": 0.0,
+      "mean_survival_steps": 50.0,
+      "survival_ci_low": 50.0,
+      "survival_ci_high": 50.0,
+      "avg_nodes_per_step": 42.6
+    },
+    "depth_4": {
+      "capture_rate": 0.0,
+      "capture_ci_low": 0.0,
+      "capture_ci_high": 0.0,
+      "mean_survival_steps": 50.0,
+      "survival_ci_low": 50.0,
+      "survival_ci_high": 50.0,
+      "avg_nodes_per_step": 87.6
+    }
+  },
+  "algorithm_comparison": {
+    "metrics": {
+      "minimax_avg_nodes": 131.0,
+      "alphabeta_avg_nodes": 37.8,
+      "expectimax_avg_nodes": 131.0,
+      "pruning_reduction_percent": 71.15
+    }
+  }
+}

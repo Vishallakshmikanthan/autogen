@@ -133,3 +133,4 @@ def test_uniform_cost_search_weighted_optimality():
     # Expected path: (0,0) -> (1,0) [cost 1] -> (1,1) [cost 1] -> (1,2) [cost 1] -> (0,2) [cost 1] = 4.0
     assert result.total_cost == 4.0
     assert Position(0, 1) not in result.states
+

@@ -51,3 +51,4 @@ def test_grid_search_problem_goal_and_heuristics():
     assert problem.is_goal(Position(0, 0)) is False
     assert problem.heuristic(Position(0, 0)) == 2.0
     assert problem.heuristic(Position(1, 1)) == 0.0
+

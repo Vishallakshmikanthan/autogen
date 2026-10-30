@@ -68,3 +68,4 @@ $$C = f_w(g) \le f_w(n^*) \le w \cdot C^*$$
 - Hart, P. E., Nilsson, N. J., & Raphael, B. (1968). *A Formal Basis for the Heuristic Determination of Minimum Cost Paths*. IEEE Transactions on Systems Science and Cybernetics, 4(2), 100–107.
 - Korf, R. E. (1985). *Depth-first iterative-deepening: An optimal admissible tree search*. Artificial Intelligence, 27(1), 97–109.
 - Pohl, I. (1970). *Heuristic search viewed as path finding in a graph*. Artificial Intelligence, 1(3-4), 193–204.
+

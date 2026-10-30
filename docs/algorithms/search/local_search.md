@@ -50,3 +50,4 @@ Unlike $k$ independent hill-climbing searches, Local Beam shares information acr
 
 - Kirkpatrick, S., Gelatt, C. D., & Vecchi, M. P. (1983). *Optimization by Simulated Annealing*. Science, 220(4598), 671–680.
 - Metropolis, N., et al. (1953). *Equation of State Calculations by Fast Computing Machines*. The Journal of Chemical Physics, 21(6), 1087–1092.
+

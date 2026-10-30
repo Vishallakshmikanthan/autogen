@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from autogen.core.types import DecisionTrace
@@ -85,5 +87,6 @@ class ViewerState(BaseModel):
     selected_agent_id: str | None = None
     decision_trace: DecisionTrace | None = None
     agent_mind: list[ViewerAgentMindCell] | None = None
+    lookahead_tree: dict[str, Any] | None = None
     overlays: ViewerOverlayData
     time_machine: ViewerTimeMachineState

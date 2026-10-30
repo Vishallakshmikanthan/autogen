@@ -81,3 +81,4 @@ def test_ida_star_optimality():
     assert res.success is True
     assert res.total_cost == res_astar.total_cost
     assert res.max_frontier_size <= 15  # Depth bound << full grid
+

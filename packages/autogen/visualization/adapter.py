@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import deque
+from typing import Any
 
 from autogen.core.types import DecisionTrace
 from autogen.simulation.core.contracts import InvalidActionEvent
@@ -97,13 +98,15 @@ class ViewerDataAdapter:
                 )
             )
 
-        # 3. Extract subjective agent mind & fog of war for selected agent
+        # 3. Extract subjective agent mind, fog of war, and lookahead tree for selected agent
         fog_visible: list[tuple[int, int]] = []
         agent_mind_cells: list[ViewerAgentMindCell] | None = None
         decision_trace: DecisionTrace | None = None
+        lookahead_tree_dict: dict[str, Any] | None = None
 
         if selected_agent_id and selected_agent_id in world_state.agents:
-            decision_trace = self._latest_traces.get(selected_agent_id)
+            agent_obj = self.engine.agents.get(selected_agent_id)
+            decision_trace = self._latest_traces.get(selected_agent_id) or getattr(agent_obj, "latest_trace", None)
 
             # Generate permitted observation to determine fog of war
             p_cfg = self.engine.perception_configs.get(selected_agent_id)
@@ -112,9 +115,14 @@ class ViewerDataAdapter:
             )
             fog_visible = [(c.position.x, c.position.y) for c in obs.visible_cells]
 
-            # Extract internal spatial memory if present
+            # Extract internal spatial memory or lookahead tree if present
             agent_obj = self.engine.agents.get(selected_agent_id)
             if agent_obj is not None:
+                # Check for adversarial search lookahead tree
+                tree_root = getattr(agent_obj, "last_search_tree", None)
+                if tree_root is not None:
+                    lookahead_tree_dict = self._serialize_game_tree(tree_root)
+
                 # Check for direct or wrapped spatial memory
                 sm = getattr(
                     agent_obj,
@@ -179,6 +187,27 @@ class ViewerDataAdapter:
             selected_agent_id=selected_agent_id,
             decision_trace=decision_trace,
             agent_mind=agent_mind_cells,
+            lookahead_tree=lookahead_tree_dict,
             overlays=overlays,
             time_machine=tm_state,
         )
+
+    def _serialize_game_tree(self, node: Any, max_depth: int = 4) -> dict[str, Any]:
+        """Serializes a GameTreeNode into a JSON-compatible dictionary."""
+        children_serialized = []
+        if getattr(node, "depth", 0) < max_depth and hasattr(node, "children"):
+            for child in node.children:
+                children_serialized.append(self._serialize_game_tree(child, max_depth))
+
+        return {
+            "node_id": str(getattr(node, "node_id", "")),
+            "player": getattr(node, "player", 0),
+            "depth": getattr(node, "depth", 0),
+            "value": round(float(getattr(node, "value", 0.0)), 2),
+            "best_action": str(getattr(node, "best_action", "")),
+            "alpha": getattr(node, "alpha", None),
+            "beta": getattr(node, "beta", None),
+            "pruned": getattr(node, "pruned", False),
+            "children": children_serialized,
+        }
+
