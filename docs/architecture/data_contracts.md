@@ -579,3 +579,54 @@ class HMMResult:
     most_likely_path: tuple[int, ...]
     log_likelihood: float
 ```
+
+
+---
+
+## 13. Decision Theory & Markov Decision Process Contracts (Module M11, SYS-10)
+
+```python
+from dataclasses import dataclass, field
+from typing import Any, Mapping, Protocol, Sequence, TypeVar, runtime_checkable
+import numpy as np
+
+S = TypeVar("S")
+A = TypeVar("A")
+
+@dataclass(frozen=True, slots=True)
+class TabularMDP:
+    num_states: int
+    num_actions: int
+    states: tuple[str, ...]
+    actions: tuple[str, ...]
+    transition_tensor: np.ndarray  # shape: (num_states, num_actions, num_states)
+    reward_tensor: np.ndarray      # shape: (num_states, num_actions, num_states)
+    gamma: float                   # discount factor in [0, 1]
+    terminal_states: frozenset[int] = field(default_factory=frozenset)
+
+    @property
+    def expected_reward(self) -> np.ndarray: ...
+
+@dataclass(frozen=True, slots=True)
+class MDPSolution:
+    v_star: np.ndarray
+    q_star: np.ndarray
+    policy: np.ndarray
+    iterations: int
+    max_residual: float
+    converged: bool
+    runtime_sec: float
+    state_labels: tuple[str, ...] = ()
+    action_labels: tuple[str, ...] = ()
+
+@dataclass(frozen=True, slots=True)
+class UtilityWeights:
+    energy: float = 1.0
+    health: float = 2.0
+    food: float = 1.5
+    hazard_risk: float = 5.0
+
+@runtime_checkable
+class UtilityFunction(Protocol[S]):
+    def __call__(self, state: S) -> float: ...
+```

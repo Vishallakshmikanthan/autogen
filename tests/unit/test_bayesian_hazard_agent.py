@@ -44,3 +44,4 @@ def test_bayesian_hazard_agent_avoids_high_belief_hazard() -> None:
     assert trace.algorithm_name == "BayesianBeliefFilter"
     assert "belief_summary" in trace.rationale
     assert "top_states" in trace.rationale["belief_summary"]
+

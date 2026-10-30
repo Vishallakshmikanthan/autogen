@@ -84,3 +84,4 @@ class BayesUpdater:
             updated_weights[h] = p_prior * lik
 
         return DiscreteDistribution(updated_weights)
+

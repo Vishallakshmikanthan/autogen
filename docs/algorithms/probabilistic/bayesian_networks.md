@@ -51,3 +51,4 @@ Eliminates hidden variables one by one by interchanging sum and product using fa
 
 - Pearl, J. (1988). *Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference*. Morgan Kaufmann.
 - Koller, D., & Friedman, N. (2009). *Probabilistic Graphical Models: Principles and Techniques*. MIT Press.
+

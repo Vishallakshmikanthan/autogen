@@ -132,3 +132,4 @@ class HiddenMarkovModel:
             most_likely_path=viterbi_path,
             log_likelihood=log_lik,
         )
+

@@ -103,3 +103,4 @@ def test_bayes_updater_binary_and_log_odds() -> None:
     post_lo = BayesUpdater.update_log_odds(prior_lo, llr)
     post_prob_from_lo = BayesUpdater.log_odds_to_probability(post_lo)
     assert abs(post_prob_from_lo - expected_post) < 1e-10
+

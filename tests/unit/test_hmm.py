@@ -86,3 +86,4 @@ def test_hmm_forward_backward_smoothing() -> None:
     # Every row of smoothed_posteriors must sum to 1.0
     for t in range(len(observations)):
         assert abs(np.sum(result.smoothed_posteriors[t]) - 1.0) < 1e-10
+

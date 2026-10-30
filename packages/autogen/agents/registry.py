@@ -12,6 +12,8 @@ from autogen.agents.adversarial.prey_agent import PreyAgent
 from autogen.agents.adversarial.stochastic_opponent import StochasticOpponent
 from autogen.agents.adversarial.strategic_forager import StrategicForager
 from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
+from autogen.agents.decision.mdp_agent import MDPAgent
+from autogen.agents.decision.utility_agent import UtilityAgent
 from autogen.agents.planning.planning_agent import PlanningAgent
 from autogen.agents.probabilistic.bayesian_hazard_agent import BayesianHazardAgent
 from autogen.agents.symbolic.logic_agent import LogicAgent
@@ -218,5 +220,30 @@ def _create_bayesian_hazard_agent(config: AgentConfig) -> BaseAgent:
 
 
 AgentRegistry.register("bayesian_hazard_agent", _create_bayesian_hazard_agent)
+
+
+def _create_mdp_agent(config: AgentConfig) -> BaseAgent:
+    return MDPAgent(
+        agent_id=config.agent_id,
+        solution=config.custom_params.get("solution"),
+        mdp=config.custom_params.get("mdp"),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("mdp_agent", _create_mdp_agent)
+
+
+def _create_utility_agent(config: AgentConfig) -> BaseAgent:
+    return UtilityAgent(
+        agent_id=config.agent_id,
+        grid_width=config.custom_params.get("grid_width", 15),
+        grid_height=config.custom_params.get("grid_height", 15),
+        weights=config.custom_params.get("weights"),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("utility_agent", _create_utility_agent)
 
 

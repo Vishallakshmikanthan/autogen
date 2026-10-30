@@ -35,3 +35,4 @@ where $\eta = \frac{1}{\sum_{s} \bar{b}_{t+1}(s) O(o_t \mid s)}$ is the normaliz
 ## 3. References
 
 - Thrun, S., Burgard, W., & Fox, D. (2005). *Probabilistic Robotics*, Chapter 2 & 4. MIT Press.
+

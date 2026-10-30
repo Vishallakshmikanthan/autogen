@@ -67,3 +67,4 @@ class HMMResult:
     smoothed_posteriors: np.ndarray  # shape (T, num_states)
     most_likely_path: tuple[int, ...]
     log_likelihood: float
+

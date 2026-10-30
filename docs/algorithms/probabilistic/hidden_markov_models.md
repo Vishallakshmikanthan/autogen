@@ -46,3 +46,4 @@ Finds the global optimal state path $\arg\max_{s_{1:T}} P(s_{1:T}, o_{1:T})$ in 
 ## 4. References
 
 - Rabiner, L. R. (1989). A tutorial on hidden Markov models and selected applications in speech recognition. *Proceedings of the IEEE*, 77(2), 257-286.
+
