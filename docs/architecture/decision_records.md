@@ -67,3 +67,42 @@ Stochastic algorithms (e.g. environment resource generation, random exploration,
 - **Positive:** Guarantee of bit-identical replayability across different runs given the same master seed; complete mathematical independence between training environments and evaluation benchmarks.
 - **Negative:** Explicit passing of PRNG streams or `SeedManager` references to stochastic components.
 
+---
+
+## ADR-005: Discrete-Time 9-Step Simulation Tick Execution Order
+
+### Context
+In multi-agent discrete-time simulation, changing the order of observation, decision request, conflict arbitration, and transition fundamentally alters outcomes (e.g. who observes food first, whether actions are evaluated on current or intermediate state).
+
+### Decision
+We standardize an immutable **9-phase simulation tick lifecycle**:
+1. **Generate observations:** Construct `Observation` for each active agent using bounded sensory filtering.
+2. **Update beliefs/memory:** Agents update internal memory and probabilistic beliefs from observations.
+3. **Request decisions:** Agents propose joint actions and emit verifiable `DecisionTrace` records.
+4. **Validate actions:** Environment validates legality. Illegal actions are cleanly substituted with `STAY`, emitting `InvalidActionEvent`.
+5. **Resolve simultaneous conflicts:** Contested movement and collection disputes are arbitrated via configured policy.
+6. **Apply environment transition:** Physical world state advances deterministically to $S_{t+1}$.
+7. **Compute rewards/costs:** Rewards calculated and dispatched to `agent.learn()`.
+8. **Update metrics and events:** `StepCompletedEvent` emitted, actions logged to replay, snapshots saved per cadence.
+9. **Publish new state:** The new immutable `WorldState` is published.
+
+### Consequences
+- **Positive:** Deterministic, reproducible behavior across all runs; explicit arbitration prevents race conditions; full step-traceability.
+- **Negative:** Strict ordering must be maintained across all custom environments.
+
+---
+
+## ADR-006: Contested Movement and Resource Arbitration Policies
+
+### Context
+When multiple agents simultaneously attempt to move into the exact same cell or collect limited food from the same cell during a tick, the simulation engine requires deterministic arbitration rules.
+
+### Decision
+We support two explicit, configurable conflict resolution policies:
+1. `ConflictPolicy.CANCEL_ALL`: When two or more agents simultaneously attempt to move into the same cell, all moving claimants are blocked and assigned `STAY` (bouncing back).
+2. `ConflictPolicy.SEEDED_PRIORITY`: Claimants are permuted via a seeded pseudo-random stream. The first claimant in the permutation successfully moves; remaining claimants are assigned `STAY`.
+3. Contested food collection supports `CollectPolicy.PROPORTIONAL` (split evenly among gathering agents) and `CollectPolicy.SEEDED_PRIORITY`.
+
+### Consequences
+- **Positive:** Prevents spatial stacking or physical clipping; fully deterministic under a given seed; enables experimental analysis of different conflict dynamics.
+- **Negative:** Agents must learn to anticipate or adapt to contested space collisions.

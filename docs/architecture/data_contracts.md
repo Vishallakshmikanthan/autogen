@@ -1,7 +1,7 @@
 # Architecture: Data Contracts & Protocols
 
 > **Standard:** Strict Typed Pydantic & Protocol Specifications  
-> **Source Ref:** AGENTS.md §1, Blueprint §2.2, §3
+> **Source Ref:** AGENTS.md §1, Blueprint §2.2, §3, Module M02
 
 ---
 
@@ -9,25 +9,15 @@
 
 All cross-module communication in AUTOGEN is mediated by immutable data classes (`Pydantic` models with `frozen=True` or `typing.Protocol`).
 
-### 1.1 Action Contract
-Agents propose actions; the environment executes them.
+### 1.1 Action Contract (Command Pattern)
+Agents propose actions; the simulation engine validates and arbitrates them before applying transitions.
 ```python
-from enum import Enum
-from pydantic import BaseModel, ConfigDict, Field
-
-class ActionType(str, Enum):
-    IDLE = "idle"
-    MOVE = "move"
-    GATHER = "gather"
-    COMMUNICATE = "communicate"
-    ACTIVATE = "activate"
-
 class Action(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     agent_id: str
-    action_type: ActionType
-    parameters: dict[str, int | float | str | bool] = Field(default_factory=dict)
+    action_type: ActionType  # UP, DOWN, LEFT, RIGHT, STAY, COLLECT
+    parameters: dict[str, Any] = Field(default_factory=dict)
 ```
 
 ### 1.2 Observation Contract
@@ -37,10 +27,14 @@ class Observation(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     agent_id: str
-    step_id: int
-    local_grid: list[list[dict[str, int | float | str]]]
-    local_agents: list[dict[str, str | int | float]]
-    internal_sensors: dict[str, float]  # Energy, health, temperature
+    step: int = Field(ge=0)
+    position: Position
+    energy: float = Field(ge=0.0)
+    health: float = Field(ge=0.0)
+    carried_food: float = Field(ge=0.0)
+    is_alive: bool = True
+    visible_cells: tuple[CellState, ...]
+    visible_agents: tuple[tuple[str, Position], ...]
 ```
 
 ### 1.3 Decision Trace Contract
@@ -54,53 +48,72 @@ class DecisionTrace(BaseModel):
     timestamp_ns: int
     algorithm_name: str
     decision_type: str
-    metrics: dict[str, float | int | str]  # nodes expanded, depth, runtime_ms
-    rationale: dict[str, Any]             # chosen branch, utility score, probabilities
+    metrics: dict[str, float | int | str]
+    rationale: dict[str, Any]
+```
+
+### 1.4 Agent Capabilities Contract
+```python
+class AgentCapabilities(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    memory: bool = False
+    belief: bool = False
+    planning: bool = False
+    learning: bool = False
 ```
 
 ---
 
 ## 2. Structural Protocols
 
-### 2.1 Agent Protocol
+### 2.1 BaseAgent Interface
 ```python
-from typing import Protocol, runtime_checkable
+class BaseAgent(ABC):
+    def __init__(self, agent_id: str, capabilities: AgentCapabilities | None = None) -> None:
+        self.agent_id = agent_id
+        self.capabilities = capabilities or AgentCapabilities()
 
-@runtime_checkable
-class AgentProtocol(Protocol):
-    agent_id: str
+    @abstractmethod
+    def observe(self, observation: Observation) -> None: ...
 
-    def perceive(self, observation: Observation) -> None:
-        """Updates internal belief and state based on sensory input."""
-        ...
+    @abstractmethod
+    def update_belief(self) -> None: ...
 
-    def act(self) -> tuple[Action, DecisionTrace]:
-        """Deliberates and returns a chosen action paired with its decision trace."""
-        ...
+    @abstractmethod
+    def decide(self) -> tuple[Action, DecisionTrace]: ...
 
-    def reset(self) -> None:
-        """Resets internal state for a new episode."""
-        ...
+    @abstractmethod
+    def learn(self, reward: float, terminal: bool) -> None: ...
+
+    @abstractmethod
+    def reset(self) -> None: ...
 ```
 
-### 2.2 Environment Protocol
+### 2.2 BaseEnvironment Protocol
 ```python
 @runtime_checkable
-class EnvironmentProtocol(Protocol):
-    def step(self, actions: list[Action]) -> tuple[dict[str, Observation], dict[str, float], bool, dict[str, Any]]:
-        """Resolves actions, transitions world state, and returns observations, rewards, done, info."""
-        ...
+class BaseEnvironment(Protocol):
+    @property
+    def state(self) -> WorldState: ...
 
-    def reset(self, seed: int | None = None) -> dict[str, Observation]:
-        """Resets environment to initial state using deterministic PRNG."""
-        ...
+    def reset(self, seed: int | None = None) -> WorldState: ...
+
+    def get_observation(self, agent_id: str) -> Observation: ...
+
+    def validate_action(self, agent_id: str, action: ActionType) -> bool: ...
+
+    def apply_transitions(self, actions: dict[str, ActionType]) -> WorldState: ...
 ```
 
 ---
 
-## 3. Serialization Standards
+## 3. Simulation Events & Telemetry
 
-1. **JSON Schema Compliance:** All models must serialize cleanly to and from JSON using standard Pydantic schemas.
-2. **Replay Persistence:** Timelines of simulation runs serialize sequences of `(step_id, WorldStateDiff, list[Action], list[DecisionTrace])`.
-3. **No Dynamic Class Pickling:** Serialization must use structured JSON/YAML or Arrow/Parquet tables for metrics, never raw Python pickles, ensuring long-term replay compatibility across versions.
+Dispatched across the synchronous `EventBus`:
 
+| Event Class | Attributes | Trigger |
+| :--- | :--- | :--- |
+| `InvalidActionEvent` | `agent_id`, `attempted_action`, `substituted_action`, `reason` | Phase 4 when an agent attempts an illegal/blocked move |
+| `StepCompletedEvent` | `step`, `state_hash`, `active_agents_count` | Phase 8 at completion of each simulation tick |
+| `DecisionTraceEmittedEvent` | `agent_id`, `algorithm_name`, `decision_type`, `metrics` | Phase 3 when an agent finishes deliberation |

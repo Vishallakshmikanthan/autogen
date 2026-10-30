@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from autogen.core.rng import SeedManager
+from autogen.simulation.core.contracts import Observation
 from autogen.simulation.environment.config import EnvironmentConfig
 from autogen.simulation.environment.generator import ProceduralWorldGenerator
 from autogen.simulation.environment.weather import WeatherEngine
@@ -67,6 +68,10 @@ class GridWorld:
         )
         return self._current_state
 
+    def restore_state(self, state: WorldState) -> None:
+        """Restores the environment state from an external snapshot."""
+        self._current_state = state
+
     def spawn_agent(
         self,
         agent_id: str,
@@ -117,6 +122,48 @@ class GridWorld:
 
         self._current_state = self._current_state.model_copy(update={"agents": updated_agents})
         return agent_state
+
+    def get_observation(self, agent_id: str, vision_radius: int = 3) -> Observation:
+        """Constructs a sensory observation for the specified agent."""
+        if self._current_state is None:
+            raise RuntimeError("Cannot get observation before environment is reset.")
+
+        agent = self._current_state.agents.get(agent_id)
+        if agent is None:
+            raise ValueError(f"Agent '{agent_id}' does not exist in environment.")
+
+        pos = agent.position
+        w, h = self.config.width, self.config.height
+
+        # Extract visible local cells within Chebyshev radius
+        visible_cells: list[CellState] = []
+        for dy in range(-vision_radius, vision_radius + 1):
+            for dx in range(-vision_radius, vision_radius + 1):
+                nx, ny = pos.x + dx, pos.y + dy
+                if 0 <= nx < w and 0 <= ny < h:
+                    visible_cells.append(self._current_state.grid[ny][nx])
+
+        # Extract visible other agents
+        visible_agents: list[tuple[str, Position]] = []
+        for other_id, other_agent in self._current_state.agents.items():
+            if other_id != agent_id and other_agent.is_alive:
+                if (
+                    max(abs(other_agent.position.x - pos.x), abs(other_agent.position.y - pos.y))
+                    <= vision_radius
+                ):
+                    visible_agents.append((other_id, other_agent.position))
+
+        return Observation(
+            agent_id=agent_id,
+            step=self._current_state.step,
+            position=pos,
+            energy=agent.energy,
+            health=agent.health,
+            carried_food=agent.carried_food,
+            is_alive=agent.is_alive,
+            visible_cells=tuple(visible_cells),
+            visible_agents=tuple(visible_agents),
+        )
 
     def is_in_bounds(self, pos: Position) -> bool:
         """Checks if coordinate pos is strictly within the grid domain."""

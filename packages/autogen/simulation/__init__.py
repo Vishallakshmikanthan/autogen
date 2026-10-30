@@ -1,5 +1,22 @@
 """Simulation package: controls world state, dynamics, and execution (SYS-01, SYS-02)."""
 
+from autogen.simulation.core import (
+    Action,
+    BaseEnvironment,
+    CollectPolicy,
+    ConflictPolicy,
+    ConflictResolver,
+    DecisionTraceEmittedEvent,
+    EventBus,
+    InvalidActionEvent,
+    Observation,
+    ReplayLog,
+    ReplayStep,
+    SimulationEngine,
+    SimulationEvent,
+    SimulationSnapshot,
+    StepCompletedEvent,
+)
 from autogen.simulation.environment import (
     EnvironmentConfig,
     GridWorld,
@@ -19,14 +36,29 @@ from autogen.simulation.state import (
 )
 
 __all__ = [
+    "Action",
     "ActionType",
     "AgentState",
+    "BaseEnvironment",
     "CellState",
+    "CollectPolicy",
+    "ConflictPolicy",
+    "ConflictResolver",
+    "DecisionTraceEmittedEvent",
     "Direction",
     "EnvironmentConfig",
+    "EventBus",
     "GridWorld",
+    "InvalidActionEvent",
+    "Observation",
     "Position",
     "ProceduralWorldGenerator",
+    "ReplayLog",
+    "ReplayStep",
+    "SimulationEngine",
+    "SimulationEvent",
+    "SimulationSnapshot",
+    "StepCompletedEvent",
     "TerrainProperties",
     "TerrainType",
     "WeatherEngine",
