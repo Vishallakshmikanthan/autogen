@@ -396,5 +396,70 @@ class MixedStrategyProfile:
 
 ```
 
+---
 
+## 10. Knowledge Representation & Logical Reasoning Contracts (Module M08, SYS-07)
+
+```python
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Mapping, Protocol, Sequence, runtime_checkable
+
+class ProofRule(str, Enum):
+    AXIOM = "axiom"
+    MODUS_PONENS = "modus_ponens"
+    RESOLUTION = "resolution"
+    AND_INTRO = "and_intro"
+    AND_ELIM = "and_elim"
+    OR_INTRO = "or_intro"
+    UNIT_PROPAGATION = "unit_propagation"
+
+@dataclass(frozen=True, slots=True)
+class ProofStep:
+    step_id: int
+    conclusion: str
+    rule: ProofRule
+    premises: tuple[int, ...] = ()
+    substitution: dict[str, str] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True, slots=True)
+class ProofTree:
+    query: str
+    is_proved: bool
+    steps: tuple[ProofStep, ...]
+    root_step_id: int | None = None
+
+    def pretty_print(self) -> str: ...
+
+@dataclass(frozen=True, slots=True)
+class Literal:
+    variable: str
+    is_negated: bool = False
+    @property
+    def complement(self) -> "Literal": ...
+
+@dataclass(frozen=True, slots=True)
+class Clause:
+    literals: frozenset[Literal]
+    @property
+    def is_empty(self) -> bool: ...
+    @property
+    def is_unit(self) -> bool: ...
+    @property
+    def is_tautology(self) -> bool: ...
+
+@runtime_checkable
+class Formula(Protocol):
+    def evaluate(self, model: Mapping[str, bool]) -> bool: ...
+    def variables(self) -> frozenset[str]: ...
+
+@runtime_checkable
+class TheoremProver(Protocol):
+    def entails(self, kb_formula: Formula, query: Formula) -> tuple[bool, ProofTree | None]: ...
+
+@runtime_checkable
+class SATSolver(Protocol):
+    def is_satisfiable(self, clauses: frozenset[Clause]) -> tuple[bool, dict[str, bool]]: ...
+```
 

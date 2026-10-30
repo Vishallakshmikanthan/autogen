@@ -12,6 +12,7 @@ from autogen.agents.adversarial.prey_agent import PreyAgent
 from autogen.agents.adversarial.stochastic_opponent import StochasticOpponent
 from autogen.agents.adversarial.strategic_forager import StrategicForager
 from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
+from autogen.agents.symbolic.logic_agent import LogicAgent
 from autogen.agents.baseline.model_based_reflex_agent import ModelBasedReflexAgent
 from autogen.agents.baseline.random_agent import RandomAgent
 from autogen.agents.baseline.simple_reflex_agent import SimpleReflexAgent
@@ -179,4 +180,16 @@ def _create_strategic_forager(config: AgentConfig) -> BaseAgent:
 
 
 AgentRegistry.register("strategic_forager", _create_strategic_forager)
+
+
+def _create_logic_agent(config: AgentConfig) -> BaseAgent:
+    return LogicAgent(
+        agent_id=config.agent_id,
+        capabilities=config.capabilities,
+        energy_safety_threshold=config.custom_params.get("energy_safety_threshold", 25.0),
+    )
+
+
+AgentRegistry.register("logic_agent", _create_logic_agent)
+
 
