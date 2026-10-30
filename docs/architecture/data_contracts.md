@@ -463,3 +463,72 @@ class SATSolver(Protocol):
     def is_satisfiable(self, clauses: frozenset[Clause]) -> tuple[bool, dict[str, bool]]: ...
 ```
 
+---
+
+## 11. Constraint Satisfaction & Classical Planning Contracts (Module M09, SYS-08)
+
+```python
+from dataclasses import dataclass, field
+from typing import Callable, Generic, Mapping, Protocol, Sequence, TypeVar, runtime_checkable
+
+V = TypeVar("V")
+D = TypeVar("D")
+
+@runtime_checkable
+class Constraint(Protocol[V, D]):
+    @property
+    def scope(self) -> tuple[V, ...]: ...
+    def is_satisfied(self, assignment: Mapping[V, D]) -> bool: ...
+
+@dataclass(slots=True)
+class CSP(Generic[V, D]):
+    variables: tuple[V, ...]
+    domains: dict[V, list[D]]
+    constraints: list[Constraint[V, D]]
+    neighbors: dict[V, set[V]] = field(default_factory=dict)
+    constraints_by_var: dict[V, list[Constraint[V, D]]] = field(default_factory=dict)
+
+    def is_consistent(self, var: V, val: D, assignment: Mapping[V, D]) -> bool: ...
+
+@dataclass(frozen=True, slots=True)
+class CSPSolution(Generic[V, D]):
+    is_solved: bool
+    assignment: dict[V, D]
+    nodes_expanded: int
+    backtracks: int
+    runtime_sec: float
+
+@dataclass(frozen=True, slots=True)
+class Fact:
+    predicate: str
+    args: tuple[str, ...] = ()
+
+@dataclass(frozen=True, slots=True)
+class GroundAction:
+    name: str
+    preconditions: frozenset[Fact]
+    add_effects: frozenset[Fact]
+    delete_effects: frozenset[Fact]
+    cost: float = 1.0
+
+    def is_applicable(self, state_facts: frozenset[Fact]) -> bool: ...
+    def apply(self, state_facts: frozenset[Fact]) -> frozenset[Fact]: ...
+
+@dataclass(frozen=True, slots=True)
+class PlanningProblem:
+    initial_facts: frozenset[Fact]
+    goal_facts: frozenset[Fact]
+    actions: tuple[GroundAction, ...]
+
+    def is_goal(self, state_facts: frozenset[Fact]) -> bool: ...
+
+@dataclass(frozen=True, slots=True)
+class Plan:
+    is_solved: bool
+    actions: tuple[GroundAction, ...]
+    total_cost: float
+    metrics: Any
+    is_proven_unsolvable: bool = False
+```
+
+

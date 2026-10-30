@@ -66,3 +66,4 @@ def test_syntax_errors() -> None:
 
     with pytest.raises(SyntaxError):
         parse_formula("A & & B")
+

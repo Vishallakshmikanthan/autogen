@@ -50,3 +50,4 @@ def test_kb_empty_consistency() -> None:
     is_consistent, proof = kb.is_consistent()
     assert is_consistent is True
     assert proof is None
+

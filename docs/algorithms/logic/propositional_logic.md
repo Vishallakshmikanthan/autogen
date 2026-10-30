@@ -74,3 +74,4 @@ function TT-Check-All(KB, alpha, symbols, model):
 
 ## 10. References
 - Russell, S., & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach* (4th ed., Chapter 7).
+

@@ -58,3 +58,4 @@ def test_horn_chaining_cycle_resilience() -> None:
     bc_result, bc_proof = pl_bc_entails(cyclic_kb, "A")
     assert bc_result is False
     assert bc_proof is None
+

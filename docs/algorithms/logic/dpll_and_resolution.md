@@ -70,3 +70,4 @@ function PL-Resolution(KB, alpha):
 ## 10. References
 - Davis, M., Logemann, G., & Loveland, D. (1962). A machine program for theorem-proving. *Communications of the ACM*, 5(7), 394-397.
 - Robinson, J. A. (1965). A machine-oriented logic based on the resolution principle. *Journal of the ACM*, 12(1), 23-41.
+

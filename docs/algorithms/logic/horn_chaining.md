@@ -59,3 +59,4 @@ function PL-FC-Entails(KB, query):
 
 ## 9. References
 - Dowling, W. F., & Gallier, J. H. (1984). Linear-time algorithms for testing the satisfiability of propositional Horn formulae. *The Journal of Logic Programming*, 1(3), 267-284.
+

@@ -139,3 +139,4 @@ def _filter_relevant_proof_steps(steps: list[ProofStep], target_step_id: int) ->
 
     mark_dependencies(target_step_id)
     return [s for s in steps if s.step_id in needed_ids]
+

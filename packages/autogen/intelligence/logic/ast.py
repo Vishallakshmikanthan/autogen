@@ -200,3 +200,4 @@ class Clause:
         if self.is_empty:
             return "[]"  # Box / Contradiction
         return " | ".join(str(lit) for lit in sorted(self.literals, key=lambda l: (l.variable, l.is_negated)))
+

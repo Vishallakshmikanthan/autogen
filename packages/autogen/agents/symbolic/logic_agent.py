@@ -112,3 +112,4 @@ class LogicAgent(BaseAgent):
         super().reset()
         self.latest_trace = None
         self.latest_proof = None
+

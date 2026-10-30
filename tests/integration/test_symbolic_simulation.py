@@ -67,3 +67,4 @@ def test_logic_agent_never_enters_impassable_cells() -> None:
             assert TERRAIN_PROPERTIES[cell.terrain].walkable is True, (
                 f"LogicAgent entered unwalkable cell at {agent.position} ({cell.terrain})"
             )
+

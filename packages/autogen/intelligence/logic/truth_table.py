@@ -56,3 +56,4 @@ def generate_truth_table_report(formula: Formula) -> list[dict[str, bool]]:
         row["__result__"] = formula.evaluate(model)
         report.append(row)
     return report
+

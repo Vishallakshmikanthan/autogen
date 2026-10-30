@@ -150,3 +150,4 @@ def _find_unit_clause(
             return unit_lit.variable, not unit_lit.is_negated
 
     return None, False
+

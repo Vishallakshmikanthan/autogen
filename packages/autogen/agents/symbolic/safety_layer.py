@@ -68,3 +68,4 @@ class SafetyRuleLayer:
         # Ask KB if destination is provably unsafe
         unsafe, proof = self.kb.ask(query)
         return unsafe, proof
+

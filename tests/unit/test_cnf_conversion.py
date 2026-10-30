@@ -59,3 +59,4 @@ def test_cnf_contradiction() -> None:
     # P & ~P should yield contradiction (resolvable to empty clause)
     clauses = to_cnf(parse_formula("P & ~P"))
     assert len(clauses) == 2
+

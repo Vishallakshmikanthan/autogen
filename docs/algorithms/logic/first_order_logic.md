@@ -59,3 +59,4 @@ function UNIFY-VAR(var, x, theta):
 ## 8. References
 - Robinson, J. A. (1965). A machine-oriented logic based on the resolution principle. *Journal of the ACM*, 12(1), 23-41.
 - Russell, S., & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach* (4th ed., Section 9.2).
+

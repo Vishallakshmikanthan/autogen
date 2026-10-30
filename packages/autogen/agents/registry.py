@@ -12,6 +12,7 @@ from autogen.agents.adversarial.prey_agent import PreyAgent
 from autogen.agents.adversarial.stochastic_opponent import StochasticOpponent
 from autogen.agents.adversarial.strategic_forager import StrategicForager
 from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
+from autogen.agents.planning.planning_agent import PlanningAgent
 from autogen.agents.symbolic.logic_agent import LogicAgent
 from autogen.agents.baseline.model_based_reflex_agent import ModelBasedReflexAgent
 from autogen.agents.baseline.random_agent import RandomAgent
@@ -191,5 +192,16 @@ def _create_logic_agent(config: AgentConfig) -> BaseAgent:
 
 
 AgentRegistry.register("logic_agent", _create_logic_agent)
+
+
+def _create_planning_agent(config: AgentConfig) -> BaseAgent:
+    return PlanningAgent(
+        agent_id=config.agent_id,
+        planning_problem=config.custom_params.get("planning_problem"),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("planning_agent", _create_planning_agent)
 
 

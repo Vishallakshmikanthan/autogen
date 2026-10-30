@@ -87,3 +87,4 @@ def test_logic_agent_registered_in_factory() -> None:
 
     agent = AgentRegistry.create(AgentConfig(agent_type="logic_agent", agent_id="la_1"))
     assert isinstance(agent, LogicAgent)
+

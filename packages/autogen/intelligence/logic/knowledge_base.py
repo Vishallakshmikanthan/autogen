@@ -74,3 +74,4 @@ class KnowledgeBase:
         if len(self._sentences) == 1:
             return self._sentences[0]
         return And(*self._sentences)
+

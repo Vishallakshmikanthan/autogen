@@ -70,3 +70,4 @@ def test_substitution_composition() -> None:
     assert comp["x"] == Constant("A")
     assert comp["y"] == Constant("B")
     assert comp["z"] == Constant("B")
+

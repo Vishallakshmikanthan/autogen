@@ -55,3 +55,4 @@ class ProofTree:
             lines.append(f" [{s.step_id}] {s.conclusion}  via {s.rule.value}{premise_str}{subst_str}")
 
         return "\n".join(lines)
+

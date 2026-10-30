@@ -56,3 +56,4 @@ def test_semantic_entailment_wumpus_style() -> None:
     assert tt_entails(kb, parse_formula("~P_1_2")) is True
     assert tt_entails(kb, parse_formula("~P_2_1")) is True
     assert tt_entails(kb, parse_formula("P_1_2")) is False
+
