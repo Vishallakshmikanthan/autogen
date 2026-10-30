@@ -7,11 +7,28 @@ from autogen.agents.base import (
     RandomWalkAgent,
     ScriptedAgent,
 )
+from autogen.agents.baseline import (
+    InternalMapCell,
+    ModelBasedReflexAgent,
+    RandomAgent,
+    SimpleReflexAgent,
+)
+from autogen.agents.memory_augmented_agent import MemoryAugmentedAgent
+from autogen.agents.registry import AgentConfig, AgentRegistry
+from autogen.agents.trace_builder import DecisionTraceBuilder
 
 __all__ = [
     "AgentCapabilities",
+    "AgentConfig",
+    "AgentRegistry",
     "BaseAgent",
+    "DecisionTraceBuilder",
     "HostileAgent",
+    "InternalMapCell",
+    "MemoryAugmentedAgent",
+    "ModelBasedReflexAgent",
+    "RandomAgent",
     "RandomWalkAgent",
     "ScriptedAgent",
+    "SimpleReflexAgent",
 ]

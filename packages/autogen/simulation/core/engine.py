@@ -21,6 +21,8 @@ from autogen.simulation.core.events import EventBus
 from autogen.simulation.core.replay import ReplayLog, ReplayStep
 from autogen.simulation.core.snapshot import SimulationSnapshot
 from autogen.simulation.environment.config import EnvironmentConfig
+from autogen.simulation.perception.contracts import PerceptionConfig
+from autogen.simulation.perception.engine import PerceptionEngine
 from autogen.simulation.state.types import ActionType
 from autogen.simulation.state.world_state import WorldState, canonical_world_hash
 
@@ -85,6 +87,8 @@ class SimulationEngine:
         seed: int = 42,
         snapshot_cadence: int = 50,
         conflict_policy: ConflictPolicy = ConflictPolicy.CANCEL_ALL,
+        perception_engine: PerceptionEngine | None = None,
+        perception_configs: dict[str, PerceptionConfig] | None = None,
     ) -> None:
         self.config = config or EnvironmentConfig(seed=seed)
         self.environment = environment
@@ -93,6 +97,12 @@ class SimulationEngine:
         self.seed_manager = SeedManager(master_seed=seed)
         self.conflict_rng = self.seed_manager.spawn_stream("conflict_arbitration")
         self.conflict_resolver = ConflictResolver(conflict_policy=conflict_policy)
+        self.perception_engine = perception_engine or PerceptionEngine(
+            seed_manager=self.seed_manager
+        )
+        self.perception_configs: dict[str, PerceptionConfig] = (
+            dict(perception_configs) if perception_configs else {}
+        )
 
         self.event_bus = EventBus()
         self.snapshot_cadence = snapshot_cadence
@@ -100,9 +110,15 @@ class SimulationEngine:
         self.action_history: list[dict[str, Action]] = []
         self.replay_steps: list[ReplayStep] = []
 
-    def register_agent(self, agent: AgentProtocol) -> None:
-        """Registers an agent into the simulation engine."""
+    def register_agent(
+        self,
+        agent: AgentProtocol,
+        perception_config: PerceptionConfig | None = None,
+    ) -> None:
+        """Registers an agent into the simulation engine with optional sensory configuration."""
         self.agents[agent.agent_id] = agent
+        if perception_config is not None:
+            self.perception_configs[agent.agent_id] = perception_config
 
     def step(self) -> WorldState:
         """Executes a single discrete time tick according to the 9-phase lifecycle."""
@@ -115,7 +131,12 @@ class SimulationEngine:
 
         # Phase 1: Generate observations
         for aid, agent in active_agents.items():
-            obs = self.environment.get_observation(aid)
+            if aid in self.perception_configs or not hasattr(self.environment, "get_observation"):
+                obs = self.perception_engine.generate_observation(
+                    current_state, aid, self.perception_configs.get(aid)
+                )
+            else:
+                obs = self.environment.get_observation(aid)
             agent.observe(obs)
 
         # Phase 2: Update beliefs and memory
