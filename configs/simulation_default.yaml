@@ -1,0 +1,16 @@
+app_name: "AUTOGEN AI Simulation Standard Run"
+environment: "development"
+
+logging:
+  level: "DEBUG"
+  format: "json"
+
+seeds:
+  master_seed: 1337
+  train_seeds_count: 5
+  eval_seeds_count: 5
+
+world:
+  width: 64
+  height: 64
+  max_steps: 5000

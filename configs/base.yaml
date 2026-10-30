@@ -1,0 +1,16 @@
+app_name: "AUTOGEN AI Research Platform"
+environment: "development"
+
+logging:
+  level: "INFO"
+  format: "console"
+
+seeds:
+  master_seed: 42
+  train_seeds_count: 10
+  eval_seeds_count: 10
+
+world:
+  width: 32
+  height: 32
+  max_steps: 1000
