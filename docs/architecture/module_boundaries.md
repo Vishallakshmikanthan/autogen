@@ -71,3 +71,4 @@ The AUTOGEN codebase is strictly divided into distinct vertical layers and horiz
 3. **Purity of Algorithmic Modules:**
    - Modules in `autogen.intelligence` must operate over standard mathematical abstractions (graphs, cost functions, transition matrices, reward functions, tensor arrays).
    - They must never import simulation-specific objects (e.g., `GridCell` or `Inventory`). Problem-specific adapters translate simulation entities into mathematical state spaces.
+

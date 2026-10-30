@@ -103,3 +103,4 @@ class EnvironmentProtocol(Protocol):
 1. **JSON Schema Compliance:** All models must serialize cleanly to and from JSON using standard Pydantic schemas.
 2. **Replay Persistence:** Timelines of simulation runs serialize sequences of `(step_id, WorldStateDiff, list[Action], list[DecisionTrace])`.
 3. **No Dynamic Class Pickling:** Serialization must use structured JSON/YAML or Arrow/Parquet tables for metrics, never raw Python pickles, ensuring long-term replay compatibility across versions.
+

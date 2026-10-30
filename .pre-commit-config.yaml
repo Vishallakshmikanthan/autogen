@@ -22,3 +22,4 @@ repos:
           - pydantic>=2.7.0
           - pydantic-settings>=2.2.0
           - types-pyyaml>=6.0.12
+

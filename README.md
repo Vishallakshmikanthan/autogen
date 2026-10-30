@@ -97,3 +97,4 @@ For detailed architectural blueprints, mathematical specifications, and mileston
 - [Data Contracts & Types](docs/architecture/data_contracts.md)
 - [Architecture Decision Records (ADRs)](docs/architecture/decision_records.md)
 - [Implementation Roadmap & Milestones](docs/implementation/roadmap.md)
+

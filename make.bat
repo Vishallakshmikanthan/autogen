@@ -51,3 +51,4 @@ if exist .pytest_cache rd /s /q .pytest_cache
 if exist .ruff_cache rd /s /q .ruff_cache
 if exist .mypy_cache rd /s /q .mypy_cache
 exit /b 0
+

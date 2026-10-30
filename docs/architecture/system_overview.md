@@ -101,3 +101,4 @@ Every discrete simulation tick $\Delta t$ executes through an invariant sequence
 5. **Arbitration & Physics Transition:** Simulation Core resolves action conflicts (e.g. movement into occupied cells, concurrent resource claims) deterministically using explicit priority rules.
 6. **State Update:** New world state $S_{t+1} \sim \mathcal{T}(S_t, a_{1:n,t})$ is instantiated.
 7. **Event & Replay Logging:** World events, metric diffs, and decision traces are appended to the replay buffer.
+

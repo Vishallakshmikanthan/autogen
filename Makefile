@@ -26,3 +26,4 @@ format:
 
 clean:
 	rm -rf .pytest_cache .ruff_cache .mypy_cache build dist *.egg-info
+

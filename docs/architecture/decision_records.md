@@ -66,3 +66,4 @@ Stochastic algorithms (e.g. environment resource generation, random exploration,
 ### Consequences
 - **Positive:** Guarantee of bit-identical replayability across different runs given the same master seed; complete mathematical independence between training environments and evaluation benchmarks.
 - **Negative:** Explicit passing of PRNG streams or `SeedManager` references to stochastic components.
+

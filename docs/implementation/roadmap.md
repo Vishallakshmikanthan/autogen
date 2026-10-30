@@ -216,3 +216,4 @@ M22 Showpiece Scenarios             ══► GATE 10 (research platform)
 - **Module M20 — Research Studio Web Frontend**
 - **Module M21 — Formal Research Paper & Documentation Synthesis**
 - **Module M22 — Reproducible Showpiece Scenarios (Gate 10 Exit)**
+
