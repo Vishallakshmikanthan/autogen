@@ -11,9 +11,11 @@ from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
 from autogen.agents.baseline.model_based_reflex_agent import ModelBasedReflexAgent
 from autogen.agents.baseline.random_agent import RandomAgent
 from autogen.agents.baseline.simple_reflex_agent import SimpleReflexAgent
+from autogen.agents.goal_based.goal_based_agent import GoalBasedAgent
 from autogen.agents.memory_augmented_agent import MemoryAugmentedAgent
 from autogen.memory.contracts import MemoryConfig
 from autogen.simulation.perception.contracts import PerceptionConfig
+from autogen.simulation.state.types import Position
 
 
 class AgentConfig(BaseModel):
@@ -110,3 +112,16 @@ def _create_memory_augmented_agent(config: AgentConfig) -> BaseAgent:
 
 
 AgentRegistry.register("memory_augmented", _create_memory_augmented_agent)
+
+
+def _create_goal_based_agent(config: AgentConfig) -> BaseAgent:
+    fixed_goal_data = config.custom_params.get("fixed_goal")
+    fixed_goal = Position(*fixed_goal_data) if fixed_goal_data else None
+    return GoalBasedAgent(
+        agent_id=config.agent_id,
+        capabilities=config.capabilities,
+        fixed_goal=fixed_goal,
+    )
+
+
+AgentRegistry.register("goal_based", _create_goal_based_agent)

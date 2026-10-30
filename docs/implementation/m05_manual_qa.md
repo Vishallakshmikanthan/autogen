@@ -77,3 +77,4 @@ This checklist details manual verification steps to confirm visual fidelity, int
 - [ ] **Invariant 1 (Decoupled Consumer):** The viewer contains zero simulation math or AI logic; killing the viewer does not corrupt simulation state.
 - [ ] **Invariant 2 (Replay Determinism):** Replaying with identical actions and seed produces bitwise-identical world hashes across all ticks.
 - [ ] **Invariant 3 (Agent Mind Isolation):** The Agent Mind viewport displays strictly what the agent observed/remembered, never ground-truth unobserved tiles.
+

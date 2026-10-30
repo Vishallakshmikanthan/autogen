@@ -301,4 +301,49 @@ class ViewerState(BaseModel):
     time_machine: ViewerTimeMachineState | None = None
 ```
 
+---
+
+## 8. Search & Problem Solving Contracts (Module M06)
+
+```python
+class SearchProblem(Protocol[S, A]):
+    @property
+    def initial_state(self) -> S: ...
+    def is_goal(self, state: S) -> bool: ...
+    def successors(self, state: S) -> list[tuple[A, S, float]]: ...
+    def heuristic(self, state: S) -> float: ...
+
+@dataclass(slots=True)
+class SearchNode(Generic[S, A]):
+    state: S
+    parent: SearchNode[S, A] | None = None
+    action: A | None = None
+    g_cost: float = 0.0
+    h_cost: float = 0.0
+    depth: int = 0
+
+@dataclass(slots=True)
+class SearchStepEvent(Generic[S, A]):
+    algorithm: str
+    step: int
+    current_state: S
+    frontier_states: list[S] = field(default_factory=list)
+    explored_states: list[S] = field(default_factory=list)
+    f_cost: float = 0.0
+    g_cost: float = 0.0
+    nodes_expanded: int = 0
+
+@dataclass(slots=True)
+class SearchResult(Generic[S, A]):
+    success: bool
+    path: list[A]
+    states: list[S]
+    total_cost: float
+    nodes_expanded: int
+    nodes_generated: int
+    max_frontier_size: int
+    runtime_seconds: float
+```
+
+
 

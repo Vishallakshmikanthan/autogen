@@ -119,3 +119,4 @@ Displays the real-time `DecisionTrace` produced by the selected agent's delibera
 - **Movement Trails (`T`):** Displays fading historical path segments for all agents.
 - **Heatmaps (`H`):** Renders food concentration and danger zones.
 - **Collision Markers (`C`):** Highlights locations where attempted illegal actions or conflicts occurred.
+

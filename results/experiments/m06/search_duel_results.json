@@ -1,0 +1,74 @@
+{
+  "config": {
+    "width": 20,
+    "height": 20,
+    "obstacle_ratio": 0.2,
+    "seed": 42
+  },
+  "results": {
+    "IDS": {
+      "success": true,
+      "cost": 38.0,
+      "nodes_expanded": 30852,
+      "nodes_generated": 33756,
+      "max_frontier_size": 38,
+      "runtime_ms": 69.71460000204388
+    },
+    "IDA*": {
+      "success": true,
+      "cost": 38.0,
+      "nodes_expanded": 90,
+      "nodes_generated": 130,
+      "max_frontier_size": 39,
+      "runtime_ms": 0.28480000037234277
+    },
+    "Greedy": {
+      "success": true,
+      "cost": 44.0,
+      "nodes_expanded": 49,
+      "nodes_generated": 87,
+      "max_frontier_size": 36,
+      "runtime_ms": 1.3542000015149824
+    },
+    "WeightedA*(1.5)": {
+      "success": true,
+      "cost": 42.0,
+      "nodes_expanded": 49,
+      "nodes_generated": 81,
+      "max_frontier_size": 32,
+      "runtime_ms": 1.3630000030389056
+    },
+    "DFS": {
+      "success": true,
+      "cost": 78.0,
+      "nodes_expanded": 84,
+      "nodes_generated": 135,
+      "max_frontier_size": 52,
+      "runtime_ms": 1.9993000023532659
+    },
+    "A*": {
+      "success": true,
+      "cost": 38.0,
+      "nodes_expanded": 91,
+      "nodes_generated": 147,
+      "max_frontier_size": 57,
+      "runtime_ms": 2.1227000033832155
+    },
+    "BFS": {
+      "success": true,
+      "cost": 38.0,
+      "nodes_expanded": 327,
+      "nodes_generated": 329,
+      "max_frontier_size": 19,
+      "runtime_ms": 3.97480000538053
+    },
+    "UCS": {
+      "success": true,
+      "cost": 38.0,
+      "nodes_expanded": 329,
+      "nodes_generated": 329,
+      "max_frontier_size": 19,
+      "runtime_ms": 4.021900000225287
+    }
+  }
+}
