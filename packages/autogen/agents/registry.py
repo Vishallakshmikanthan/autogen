@@ -265,3 +265,70 @@ def _create_learned_perception_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("learned_perception_agent", _create_learned_perception_agent)
 
 
+def _create_q_learning_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.rl.q_learning_agent import QLearningAgent
+    from autogen.intelligence.rl.tabular import QLearning
+
+    ql = config.custom_params.get("q_learning")
+    if ql is None:
+        ql = QLearning(
+            alpha=config.custom_params.get("alpha", 0.1),
+            gamma=config.custom_params.get("gamma", 0.99),
+            epsilon=config.custom_params.get("epsilon", 0.1),
+            seed=config.seed,
+        )
+    return QLearningAgent(
+        agent_id=config.agent_id,
+        q_learning=ql,
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("q_learning_agent", _create_q_learning_agent)
+
+
+def _create_sarsa_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.rl.sarsa_agent import SarsaAgent
+    from autogen.intelligence.rl.tabular import SARSA
+
+    sarsa = config.custom_params.get("sarsa")
+    if sarsa is None:
+        sarsa = SARSA(
+            alpha=config.custom_params.get("alpha", 0.1),
+            gamma=config.custom_params.get("gamma", 0.99),
+            epsilon=config.custom_params.get("epsilon", 0.1),
+            seed=config.seed,
+        )
+    return SarsaAgent(
+        agent_id=config.agent_id,
+        sarsa=sarsa,
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("sarsa_agent", _create_sarsa_agent)
+
+
+def _create_dyna_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.rl.dyna_agent import DynaAgent
+    from autogen.intelligence.rl.dyna import DynaQ
+
+    dyna = config.custom_params.get("dyna_q")
+    if dyna is None:
+        dyna = DynaQ(
+            alpha=config.custom_params.get("alpha", 0.1),
+            gamma=config.custom_params.get("gamma", 0.99),
+            epsilon=config.custom_params.get("epsilon", 0.1),
+            n_planning_steps=config.custom_params.get("n_planning_steps", 10),
+            seed=config.seed,
+        )
+    return DynaAgent(
+        agent_id=config.agent_id,
+        dyna_q=dyna,
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("dyna_agent", _create_dyna_agent)
+
+

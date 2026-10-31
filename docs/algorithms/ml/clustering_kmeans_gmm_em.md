@@ -26,3 +26,4 @@ Clustering identifies latent grouping structure in unlabeled observations $\math
 ## 4. Verification Strategy & Test Oracles
 - Check monotonicity of $J^{(t)}$ and $\ln p(\mathbf{X} \mid \mathbf{\theta}^{(t)})$ across iterations.
 - Benchmark clustering performance against `sklearn.cluster.KMeans` and `sklearn.mixture.GaussianMixture`.
+

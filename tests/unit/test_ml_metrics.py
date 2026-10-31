@@ -41,3 +41,4 @@ def test_roc_auc_matches_sklearn() -> None:
     sk_auc = skm.roc_auc_score(y_true, y_scores)
 
     assert abs(my_auc - sk_auc) < 1e-10
+

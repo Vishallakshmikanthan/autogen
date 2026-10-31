@@ -58,3 +58,4 @@ def test_pca_reconstruction_error_non_increasing_invariant() -> None:
 
     # At full components k=D, reconstruction error should be approximately zero
     assert errors[-1] < 1e-10
+

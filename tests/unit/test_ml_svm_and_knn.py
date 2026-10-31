@@ -74,3 +74,4 @@ def test_pegasos_svm_learns_linear_and_rbf_margins() -> None:
     svm_rbf.fit(pts, y_rbf)
     preds_rbf = svm_rbf.predict(pts)
     assert accuracy_score(y_rbf, preds_rbf) >= 0.85
+

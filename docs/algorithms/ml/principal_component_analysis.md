@@ -28,3 +28,4 @@ $$\text{EVR}_j = \frac{\lambda_j}{\sum_{i=1}^D \lambda_i}$$
 ## 4. Verification Strategy & Test Oracles
 - Compare singular values, components, and explained variance ratios against `sklearn.decomposition.PCA`.
 - Tolerance: $\|s_{\text{ours}} - s_{\text{sk}}\|_\infty < 10^{-6}$.
+

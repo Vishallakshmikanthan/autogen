@@ -60,3 +60,4 @@ def test_gmm_log_likelihood_monotonicity_invariant() -> None:
     probs = gmm.predict_proba(X)
     assert probs.shape == (160, 2)
     assert np.allclose(np.sum(probs, axis=1), 1.0)
+

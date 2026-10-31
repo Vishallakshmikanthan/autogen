@@ -691,3 +691,58 @@ class Clusterer(Protocol):
     def fit(self, X: np.ndarray) -> Any: ...
     def predict(self, X: np.ndarray) -> np.ndarray: ...
 ```
+
+---
+
+## 15. Reinforcement Learning Contracts (Module M13, SYS-12)
+
+```python
+from dataclasses import dataclass, field
+from typing import Any, Mapping, Protocol, runtime_checkable
+import numpy as np
+
+@dataclass(frozen=True, slots=True)
+class StepResult:
+    observation: Any
+    reward: float
+    terminated: bool
+    truncated: bool
+    info: Mapping[str, Any] = field(default_factory=dict)
+
+@runtime_checkable
+class StateEncoder(Protocol):
+    def encode(self, observation: Any) -> Any: ...
+    @property
+    def num_states(self) -> int | None: ...
+
+@dataclass(frozen=True, slots=True)
+class EvaluationMetric:
+    mean_return: float
+    std_return: float
+    mean_length: float
+    td_error_mean: float
+    epsilon: float
+
+@dataclass
+class QTable:
+    num_actions: int = 4
+    default_value: float = 0.0
+    values: dict[Any, np.ndarray] = field(default_factory=dict)
+
+    def get_q(self, state: Any) -> np.ndarray: ...
+    def set_q(self, state: Any, action: int, value: float) -> None: ...
+    def best_action(self, state: Any, rng: np.random.Generator | None = None) -> int: ...
+
+@runtime_checkable
+class RLAlgorithm(Protocol):
+    def select_action(self, state: Any, explore: bool = True) -> int: ...
+    def update(
+        self,
+        state: Any,
+        action: int,
+        reward: float,
+        next_state: Any,
+        terminated: bool,
+        next_action: int | None = None,
+    ) -> float: ...
+```

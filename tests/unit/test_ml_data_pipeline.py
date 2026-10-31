@@ -117,3 +117,4 @@ def test_group_k_fold_splits() -> None:
         train_grps = set(group_ids[train_idx])
         test_grps = set(group_ids[test_idx])
         assert train_grps.isdisjoint(test_grps)
+

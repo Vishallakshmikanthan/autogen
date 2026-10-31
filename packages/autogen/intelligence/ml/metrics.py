@@ -165,3 +165,4 @@ def roc_auc_score(
     # Numerical integration: int TPR d(FPR)
     auc = np.sum((fpr[1:] - fpr[:-1]) * (tpr[1:] + tpr[:-1]) / 2.0)
     return float(auc)
+

@@ -54,3 +54,4 @@ Algorithm MiniBatchSGD(X, y, alpha, eta, max_iter, batch_size):
 
 ## 8. Known Limitations
 - Sensitive to unscaled features when using gradient descent solvers (mitigated by using `StandardScaler`).
+

@@ -95,3 +95,4 @@ class LearnedPerceptionComponent:
         if cell_features.ndim == 1:
             cell_features = cell_features[np.newaxis, :]
         return float(self.resource_predictor.predict_yield(cell_features)[0])
+

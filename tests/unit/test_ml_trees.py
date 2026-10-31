@@ -96,3 +96,4 @@ def test_decision_tree_and_random_forest_regressors() -> None:
     assert dt_r2 > 0.80
     assert rf_r2 > dt_r2  # Forest reduces variance of single tree
     assert rf_r2 > base_r2
+

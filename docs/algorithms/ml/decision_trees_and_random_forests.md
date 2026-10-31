@@ -35,3 +35,4 @@ $$\Delta I(S, j, \theta) = I(S) - \frac{|S_L|}{|S|} I(S_L) - \frac{|S_R|}{|S|} I
 ## 5. Verification Strategy & Test Oracles
 - Compare classification impurity reduction and tree predictions with `sklearn.tree.DecisionTreeClassifier` and `sklearn.ensemble.RandomForestClassifier`.
 - Verify out-of-bag (OOB) accuracy on synthetic non-linear benchmarks (XOR and multi-modal blobs).
+

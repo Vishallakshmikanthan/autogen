@@ -98,3 +98,4 @@ def test_logistic_regression_matches_sklearn_and_beats_baseline() -> None:
     # Within small tolerance of sklearn L-BFGS
     assert abs(acc - sk_acc) <= 0.05
     assert pred_probs.shape == (len(X_test), 2)
+

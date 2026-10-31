@@ -111,3 +111,4 @@ class Clusterer(Protocol):
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         ...
+

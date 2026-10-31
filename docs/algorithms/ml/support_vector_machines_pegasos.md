@@ -25,3 +25,4 @@ For non-linear boundaries, inner products $\mathbf{x}_i^T \mathbf{x}_j$ are repl
 
 ## 5. Verification Strategy & Test Oracles
 - Compare classification accuracy and decision boundaries with `sklearn.svm.SVC` and `LinearSVC`.
+
