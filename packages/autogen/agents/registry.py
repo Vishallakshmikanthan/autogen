@@ -332,3 +332,54 @@ def _create_dyna_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("dyna_agent", _create_dyna_agent)
 
 
+def _create_dqn_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.neural.dqn_agent import DQNAgent
+    from autogen.intelligence.neural.dqn import DeepQNetwork
+
+    dqn = config.custom_params.get("dqn")
+    if dqn is None:
+        dqn = DeepQNetwork(
+            state_dim=config.custom_params.get("state_dim", 4),
+            num_actions=config.custom_params.get("num_actions", 4),
+            seed=config.seed,
+        )
+    return DQNAgent(
+        agent_id=config.agent_id,
+        dqn=dqn,
+        state_dim=config.custom_params.get("state_dim", 4),
+        replay_capacity=config.custom_params.get("replay_capacity", 5000),
+        batch_size=config.custom_params.get("batch_size", 32),
+        initial_epsilon=config.custom_params.get("initial_epsilon", 1.0),
+        min_epsilon=config.custom_params.get("min_epsilon", 0.05),
+        epsilon_decay=config.custom_params.get("epsilon_decay", 0.995),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("dqn_agent", _create_dqn_agent)
+
+
+def _create_ppo_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.neural.ppo_agent import PPOAgent
+    from autogen.intelligence.neural.policy_gradient import PPO
+
+    ppo = config.custom_params.get("ppo")
+    if ppo is None:
+        ppo = PPO(
+            state_dim=config.custom_params.get("state_dim", 4),
+            num_actions=config.custom_params.get("num_actions", 4),
+            seed=config.seed,
+        )
+    return PPOAgent(
+        agent_id=config.agent_id,
+        ppo=ppo,
+        state_dim=config.custom_params.get("state_dim", 4),
+        update_interval=config.custom_params.get("update_interval", 32),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("ppo_agent", _create_ppo_agent)
+
+
+

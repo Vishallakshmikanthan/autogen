@@ -51,8 +51,6 @@ ignore = [
     "E501",  # line length handled by formatter
     "B008",  # do not perform function calls in argument defaults (Pydantic Field)
     "UP042", # str, Enum inheritance preferred for pydantic serialization
-    "UP046", # Generic class type parameters (PEP 695)
-    "UP047", # Generic function type parameters (PEP 695)
 ]
 
 [tool.ruff.lint.isort]
@@ -76,7 +74,7 @@ disallow_incomplete_defs = false
 check_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = ["yaml.*", "scipy.*", "pygame"]
+module = ["yaml.*", "scipy.*", "pygame", "torch", "torch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

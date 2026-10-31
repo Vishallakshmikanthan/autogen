@@ -15,6 +15,7 @@ from autogen.agents.baseline import (
 )
 from autogen.agents.goal_based import GoalBasedAgent
 from autogen.agents.memory_augmented_agent import MemoryAugmentedAgent
+from autogen.agents.neural import CNNPerceptionModule, DQNAgent, PPOAgent
 from autogen.agents.registry import AgentConfig, AgentRegistry
 from autogen.agents.trace_builder import DecisionTraceBuilder
 
@@ -23,12 +24,15 @@ __all__ = [
     "AgentConfig",
     "AgentRegistry",
     "BaseAgent",
+    "CNNPerceptionModule",
+    "DQNAgent",
     "DecisionTraceBuilder",
     "GoalBasedAgent",
     "HostileAgent",
     "InternalMapCell",
     "MemoryAugmentedAgent",
     "ModelBasedReflexAgent",
+    "PPOAgent",
     "RandomAgent",
     "RandomWalkAgent",
     "ScriptedAgent",
