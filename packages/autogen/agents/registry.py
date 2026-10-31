@@ -382,4 +382,56 @@ def _create_ppo_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("ppo_agent", _create_ppo_agent)
 
 
+def _create_iql_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.multiagent.iql_agent import IQLAgent
+    from autogen.intelligence.rl.tabular import QLearning
+
+    ql = config.custom_params.get("q_learning")
+    if ql is None:
+        ql = QLearning(
+            alpha=config.custom_params.get("alpha", 0.1),
+            gamma=config.custom_params.get("gamma", 0.95),
+            epsilon=config.custom_params.get("epsilon", 0.1),
+            seed=config.seed,
+        )
+    return IQLAgent(
+        agent_id=config.agent_id,
+        q_learning=ql,
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("iql_agent", _create_iql_agent)
+
+
+def _create_marl_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.multiagent.marl_agent import MARLAgent
+
+    return MARLAgent(
+        agent_id=config.agent_id,
+        actor_net=config.custom_params.get("actor_net"),
+        obs_dim=config.custom_params.get("obs_dim", 4),
+        capabilities=config.capabilities,
+        seed=config.seed,
+    )
+
+
+AgentRegistry.register("marl_agent", _create_marl_agent)
+
+
+def _create_cooperative_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.multiagent.cooperative_agent import CooperativeAgent
+
+    return CooperativeAgent(
+        agent_id=config.agent_id,
+        pheromone_field=config.custom_params.get("pheromone_field"),
+        comm_bus=config.custom_params.get("comm_bus"),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("cooperative_agent", _create_cooperative_agent)
+
+
+
 
