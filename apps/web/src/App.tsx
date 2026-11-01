@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationSidebar, StudioTab } from './components/layout/NavigationSidebar';
-import { TelemetryHeader } from './components/layout/TelemetryHeader';
+import { StudioTab } from './components/layout/NavigationSidebar';
 import { LiveSimulationView } from './components/slices/Slice1LiveSimulation/LiveSimulationView';
 import { DecisionTraceViewer } from './components/slices/Slice2DecisionTraces/DecisionTraceViewer';
 import { TruthVsBeliefSplit } from './components/slices/Slice2DecisionTraces/TruthVsBeliefSplit';
 import { WorldBuilderView } from './components/slices/Slice3WorldBuilder/WorldBuilderView';
 import { AlgorithmLabView } from './components/slices/Slice4AlgorithmLab/AlgorithmLabView';
 import { ExperimentManagerView } from './components/slices/Slice5ExperimentAnalytics/ExperimentManagerView';
+import { VillageSocietyView } from './components/slices/Slice6VillageSociety/VillageSocietyView';
 import { useSimulationStream } from './api/useSimulationStream';
 import { createSimulation } from './api/client';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<StudioTab>('LIVE_SIMULATION');
+  const [activeTab, setActiveTab] = useState<StudioTab>('VILLAGE_SOCIETY');
   const [activeSimId, setActiveSimId] = useState<string | null>(null);
 
   // Initialize a default simulation session on mount if none active
@@ -45,51 +45,45 @@ export const App: React.FC = () => {
 
   const { viewerState } = useSimulationStream(activeSimId);
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-research-bg text-slate-100 font-sans">
-      {/* Navigation Sidebar */}
-      <NavigationSidebar activeTab={activeTab} onSelectTab={setActiveTab} />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TelemetryHeader activeSimId={activeSimId} />
-
-        <main className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'LIVE_SIMULATION' && (
-            <LiveSimulationView simId={activeSimId} />
-          )}
-
-          {activeTab === 'DECISION_TRACES' && (
-            <div className="space-y-6">
-              <TruthVsBeliefSplit
-                viewerState={viewerState}
-                selectedAgentId={viewerState?.agents[0]?.agent_id || null}
-              />
-              <DecisionTraceViewer trace={viewerState?.decision_trace} />
-            </div>
-          )}
-
-          {activeTab === 'WORLD_BUILDER' && (
-            <WorldBuilderView
-              onSimulationCreated={(newSimId) => {
-                setActiveSimId(newSimId);
-                setActiveTab('LIVE_SIMULATION');
-              }}
+  const renderOverlayTabContent = () => {
+    switch (activeTab) {
+      case 'LIVE_SIMULATION':
+        return <LiveSimulationView simId={activeSimId} />;
+      case 'DECISION_TRACES':
+        return (
+          <div className="space-y-6">
+            <TruthVsBeliefSplit
+              viewerState={viewerState}
+              selectedAgentId={viewerState?.agents[0]?.agent_id || null}
             />
-          )}
+            <DecisionTraceViewer trace={viewerState?.decision_trace} />
+          </div>
+        );
+      case 'WORLD_BUILDER':
+        return (
+          <WorldBuilderView
+            onSimulationCreated={(newSimId) => {
+              setActiveSimId(newSimId);
+              setActiveTab('LIVE_SIMULATION');
+            }}
+          />
+        );
+      case 'ALGORITHM_LAB':
+        return <AlgorithmLabView />;
+      case 'EXPERIMENTS':
+        return <ExperimentManagerView />;
+      default:
+        return null;
+    }
+  };
 
-          {activeTab === 'ALGORITHM_LAB' && (
-            <AlgorithmLabView />
-          )}
-
-          {activeTab === 'EXPERIMENTS' && (
-            <ExperimentManagerView />
-          )}
-        </main>
-      </div>
-    </div>
+  return (
+    <VillageSocietyView
+      activeTab={activeTab}
+      onSelectTab={setActiveTab}
+      overlayContent={renderOverlayTabContent()}
+    />
   );
 };
 
 export default App;
-

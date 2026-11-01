@@ -1,7 +1,7 @@
 import React from 'react';
-import { Eye, Brain, Sliders, BookOpen, FlaskConical, Zap } from 'lucide-react';
+import { Eye, Brain, Sliders, BookOpen, FlaskConical, Zap, Home } from 'lucide-react';
 
-export type StudioTab = 'LIVE_SIMULATION' | 'DECISION_TRACES' | 'WORLD_BUILDER' | 'ALGORITHM_LAB' | 'EXPERIMENTS';
+export type StudioTab = 'LIVE_SIMULATION' | 'VILLAGE_SOCIETY' | 'DECISION_TRACES' | 'WORLD_BUILDER' | 'ALGORITHM_LAB' | 'EXPERIMENTS';
 
 interface NavigationSidebarProps {
   activeTab: StudioTab;
@@ -10,6 +10,7 @@ interface NavigationSidebarProps {
 
 export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({ activeTab, onSelectTab }) => {
   const items: Array<{ id: StudioTab; label: string; icon: React.ReactNode; badge?: string }> = [
+    { id: 'VILLAGE_SOCIETY', label: 'Village Society', icon: <Home size={16} /> },
     { id: 'LIVE_SIMULATION', label: 'Live Simulation', icon: <Eye size={16} /> },
     { id: 'DECISION_TRACES', label: 'Decision Traces', icon: <Brain size={16} /> },
     { id: 'WORLD_BUILDER', label: 'World Builder', icon: <Sliders size={16} /> },
