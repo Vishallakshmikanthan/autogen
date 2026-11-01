@@ -491,6 +491,31 @@ def _create_hybrid_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("hybrid_agent", _create_hybrid_agent)
 
 
+def _create_villager_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.village.villager_agent import VillagerAgent
+    from autogen.intelligence.village.utility_ethics import VillagerUtilityWeights
+    from autogen.simulation.environment.village.village_grid import VillageRole
+
+    role_raw = config.custom_params.get("role", "Farmer")
+    role = VillageRole(role_raw) if role_raw in [r.value for r in VillageRole] else VillageRole.FARMER
+    weights_dict = config.custom_params.get("utility_weights")
+    weights = (
+        VillagerUtilityWeights(**weights_dict)
+        if isinstance(weights_dict, dict)
+        else VillagerUtilityWeights()
+    )
+    return VillagerAgent(
+        agent_id=config.agent_id,
+        name=config.custom_params.get("name", config.agent_id),
+        role=role,
+        utility_weights=weights,
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("villager_agent", _create_villager_agent)
+
+
 
 
 
