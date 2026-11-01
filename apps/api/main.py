@@ -17,6 +17,7 @@ from apps.api.routers import (
     experiments_router,
     simulations_router,
     stream_router,
+    village_router,
 )
 
 
@@ -54,6 +55,7 @@ def create_app() -> FastAPI:
     app.include_router(simulations_router)
     app.include_router(stream_router)
     app.include_router(experiments_router)
+    app.include_router(village_router)
 
     @app.get("/health", tags=["system"])
     def health_check() -> dict[str, str]:

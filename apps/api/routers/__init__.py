@@ -5,6 +5,7 @@ from apps.api.routers.environments import router as environments_router
 from apps.api.routers.experiments import router as experiments_router
 from apps.api.routers.simulations import router as simulations_router
 from apps.api.routers.stream import router as stream_router
+from apps.api.routers.village import router as village_router
 
 __all__ = [
     "agents_router",
@@ -12,5 +13,6 @@ __all__ = [
     "experiments_router",
     "simulations_router",
     "stream_router",
+    "village_router",
 ]
 
