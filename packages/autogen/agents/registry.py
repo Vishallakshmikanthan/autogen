@@ -464,6 +464,34 @@ def _create_organism_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("organism_agent", _create_organism_agent)
 
 
+def _create_hybrid_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.hybrid.config import HybridAgentConfig
+    from autogen.agents.hybrid.hybrid_agent import HybridCognitiveAgent
+
+    cfg = config.custom_params.get("config")
+    if cfg is None:
+        cfg = HybridAgentConfig(
+            enable_memory=config.custom_params.get("enable_memory", True),
+            enable_astar=config.custom_params.get("enable_astar", True),
+            enable_bayes=config.custom_params.get("enable_bayes", True),
+            enable_q_learning=config.custom_params.get("enable_q_learning", True),
+            enable_safety_shield=config.custom_params.get("enable_safety_shield", True),
+            enable_options=config.custom_params.get("enable_options", True),
+            hazard_threshold=config.custom_params.get("hazard_threshold", 0.5),
+            seed=config.seed,
+        )
+
+    return HybridCognitiveAgent(
+        agent_id=config.agent_id,
+        config=cfg,
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("hybrid_agent", _create_hybrid_agent)
+
+
+
 
 
 

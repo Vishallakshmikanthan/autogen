@@ -15,6 +15,7 @@ from autogen.agents.baseline import (
 )
 from autogen.agents.evolution import EvolvedAgent, OrganismAgent
 from autogen.agents.goal_based import GoalBasedAgent
+from autogen.agents.hybrid import HybridAgentConfig, HybridCognitiveAgent
 from autogen.agents.memory_augmented_agent import MemoryAugmentedAgent
 from autogen.agents.multiagent import CooperativeAgent, IQLAgent, MARLAgent
 from autogen.agents.neural import CNNPerceptionModule, DQNAgent, PPOAgent
@@ -33,6 +34,8 @@ __all__ = [
     "EvolvedAgent",
     "GoalBasedAgent",
     "HostileAgent",
+    "HybridAgentConfig",
+    "HybridCognitiveAgent",
     "IQLAgent",
     "InternalMapCell",
     "MARLAgent",
