@@ -1,0 +1,106 @@
+site_name: AUTOGEN AI — Scientific Research & Simulation Platform
+site_description: A modular artificial intelligence research and simulation platform built from mathematical first principles.
+site_author: AUTOGEN AI Engineering Team
+site_url: https://autogen-ai.local
+
+repo_name: autogen-ai
+repo_url: https://github.com/autogen-ai/autogen
+
+theme:
+  name: material
+  palette:
+    - scheme: slate
+      primary: teal
+      accent: emerald
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - scheme: default
+      primary: teal
+      accent: emerald
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.arithmatex:
+      generic: true
+  - tables
+  - attr_list
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js
+
+extra_css:
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css
+
+nav:
+  - Overview:
+      - Introduction: README.md
+      - Architecture Overview: docs/architecture/system_overview.md
+      - Module Boundaries: docs/architecture/module_boundaries.md
+      - Data Contracts: docs/architecture/data_contracts.md
+      - Decision Records (ADRs): docs/architecture/decision_records.md
+      - Persistence & API: docs/architecture/persistence_and_api.md
+  - Algorithms & Mathematical Foundations:
+      - Search Algorithms:
+          - Informed Search: docs/algorithms/search/informed_search.md
+          - Uninformed Search: docs/algorithms/search/uninformed_search.md
+          - Local Search: docs/algorithms/search/local_search.md
+          - Heuristics: docs/algorithms/search/heuristics_and_admissibility.md
+      - Adversarial & Game Theory:
+          - Minimax & Alpha-Beta: docs/algorithms/adversarial/minimax_alphabeta.md
+          - Expectimax: docs/algorithms/adversarial/expectimax.md
+          - Predator-Prey Lookahead: docs/algorithms/adversarial/predator_prey_lookahead.md
+          - Matrix Games & Nash: docs/algorithms/adversarial/game_theory_nash.md
+      - Probabilistic & Perception:
+          - Grid Belief Filter: docs/algorithms/probabilistic/grid_belief_filter.md
+          - Bayesian Networks: docs/algorithms/probabilistic/bayesian_networks.md
+          - Hidden Markov Models: docs/algorithms/probabilistic/hidden_markov_models.md
+          - Perception Engine: docs/algorithms/perception/perception_engine.md
+      - Decision & Planning:
+          - Bellman & Value Iteration: docs/algorithms/decision/bellman_equations_and_value_iteration.md
+          - Policy Iteration: docs/algorithms/decision/policy_iteration.md
+          - GridWorld MDP: docs/algorithms/decision/gridworld_to_mdp.md
+          - Forward State Planning: docs/algorithms/planning/forward_state_space_planning.md
+          - CSP & Arc Consistency: docs/algorithms/planning/csp_and_arc_consistency.md
+      - Reinforcement Learning:
+          - Temporal Difference Control: docs/algorithms/rl/temporal_difference_control.md
+          - Dyna-Q Model-Based: docs/algorithms/rl/dyna_q_model_based.md
+          - TD(Lambda) & Eligibility: docs/algorithms/rl/td_lambda_and_eligibility.md
+          - Multi-Armed Bandits: docs/algorithms/rl/multi_armed_bandits.md
+      - Hybrid & Cognitive:
+          - Hybrid Architecture: docs/algorithms/hybrid/hybrid_cognitive_architecture.md
+          - Symbolic Safety Shield: docs/algorithms/hybrid/symbolic_safety_shield.md
+          - Hierarchical Options: docs/algorithms/hybrid/hierarchical_options.md
+      - Analytics & Statistics:
+          - Statistical Engine: docs/algorithms/analytics/statistical_engine.md
+  - Empirical Research Findings:
+      - Hybrid Cognitive Architecture: research/findings/REP_001_hybrid_cognitive_architecture.md
+  - Gate 10 Showpiece Scenarios:
+      - 1. Ghost in the Fog: docs/scenarios/1_ghost_in_the_fog.md
+      - 2. Algorithm Duel: docs/scenarios/2_algorithm_duel.md
+      - 3. Tragedy of the Commons: docs/scenarios/3_tragedy_of_the_commons.md
+      - 4. Evolution of Tribes: docs/scenarios/4_evolution_of_tribes.md
+      - 5. Ablation Arena: docs/scenarios/5_ablation_arena.md
+      - 6. Time Machine: docs/scenarios/6_time_machine.md
+      - 7. The Changing World: docs/scenarios/7_the_changing_world.md
+

@@ -25,6 +25,10 @@ def run_command(cmd: list[str], description: str) -> int:
 def run_lint() -> int:
     exit_code = 0
     exit_code |= run_command(
+        [sys.executable, "scripts/docs_lint.py"],
+        "Documentation & Algorithm Registry Linter",
+    )
+    exit_code |= run_command(
         [sys.executable, "-m", "ruff", "check", "packages", "apps", "tests"],
         "Ruff linter",
     )

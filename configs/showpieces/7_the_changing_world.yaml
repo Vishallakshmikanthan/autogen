@@ -1,0 +1,31 @@
+scenario_id: "7_the_changing_world"
+title: "The Changing World: Adaptation & Plasticity Under Non-Stationary Drift"
+description: "Non-stationary environment with seasonal regime shifts in resource density and hazards. Measures cognitive adaptation latency and return recovery."
+environment:
+  width: 16
+  height: 16
+  initial_resource_density: 0.15
+  initial_hazard_density: 0.02
+  season_length_ticks: 30
+  seasons:
+    - name: "Abundant Spring"
+      resource_multiplier: 1.5
+      hazard_multiplier: 0.5
+    - name: "Scorching Drought"
+      resource_multiplier: 0.3
+      hazard_multiplier: 2.0
+    - name: "Flooded Monsoon"
+      resource_multiplier: 0.8
+      hazard_multiplier: 1.5
+    - name: "Renewed Autumn"
+      resource_multiplier: 1.2
+      hazard_multiplier: 0.8
+agents:
+  - id: "adaptive_hybrid"
+    type: "hybrid"
+  - id: "rigid_reflex"
+    type: "simple_reflex"
+evaluation:
+  seed: 99
+  total_ticks: 120
+

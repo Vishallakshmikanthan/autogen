@@ -1,0 +1,29 @@
+scenario_id: "1_ghost_in_the_fog"
+title: "Ghost in the Fog: Bayesian Belief Tracking & Symbolic Safety Shield"
+description: "A hidden predator stalks a foraging colony under partial observability. Shows belief entropy collapse and runtime safety shield veto."
+environment:
+  width: 16
+  height: 16
+  obstacle_density: 0.12
+  resource_density: 0.08
+  hazard_density: 0.04
+  energy_max: 100.0
+  max_ticks: 60
+sensor:
+  radius: 2
+  false_positive_rate: 0.05
+  false_negative_rate: 0.10
+agents:
+  hybrid_target:
+    type: "hybrid"
+    enable_memory: true
+    enable_bayes: true
+    enable_astar: true
+    enable_safety_shield: true
+    shield_hazard_threshold: 0.50
+  baseline_reflex:
+    type: "simple_reflex"
+evaluation:
+  seeds: 20
+  seed_start: 1001
+

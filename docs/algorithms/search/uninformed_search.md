@@ -87,7 +87,15 @@ function UniformCostSearch(problem):
 
 ---
 
-## 6. References
+## 6. Known Limitations
+
+- **BFS Non-Optimality on Weighted Graphs:** BFS only guarantees minimal path cost when step costs are strictly uniform.
+- **UCS High Expansion Count:** UCS blindly expands in all directions of increasing cost contour without goal-directed guidance, leading to high node expansion counts compared to informed heuristic search.
+- **Memory Growth:** Both algorithms retain large frontiers and visited sets in memory ($\mathcal{O}(b^d)$).
+
+---
+
+## 7. References / Citations
 
 - Russell, S., & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach (4th ed.)*. Pearson. Chapter 3.
 - Dijkstra, E. W. (1959). *A note on two problems in connexion with graphs*. Numerische Mathematik, 1(1), 269–271.

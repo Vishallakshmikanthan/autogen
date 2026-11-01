@@ -1,0 +1,30 @@
+scenario_id: "3_tragedy_of_the_commons"
+title: "Tragedy of the Commons: Social Dilemmas in Regrowing Resource Commons"
+description: "N autonomous learning agents forage a shared regrowing food pool. Demonstrates tragedy of depletion under selfish rewards vs sustainability under cooperative mechanisms."
+environment:
+  width: 14
+  height: 14
+  initial_resource_stock: 40
+  carrying_capacity: 50
+  regrowth_rate: 0.15
+  depletion_threshold: 4
+  max_ticks: 100
+agents:
+  count: 4
+  learning_rate: 0.1
+  discount_gamma: 0.95
+modes:
+  - id: "selfish"
+    name: "Selfish Reward (Individual Gain Only)"
+    prosocial_weight: 0.0
+  - id: "prosocial"
+    name: "Mixed / Prosocial Reward"
+    prosocial_weight: 0.5
+  - id: "sanctioning"
+    name: "Decentralized Peer Punishment"
+    punishment_cost: 1.0
+    punishment_fine: 3.0
+evaluation:
+  seeds: 15
+  seed_start: 501
+

@@ -33,7 +33,16 @@ $$
 
 ---
 
-## 2. Contraction Mapping & Convergence Proof
+## 2. Assumptions
+
+1. **Stationary Dynamics:** Transition matrix $\mathcal{T}(s, a, s')$ and reward function $\mathcal{R}(s, a, s')$ do not drift over time.
+2. **Markov Property:** Next state $s'$ depends solely on current state $s$ and chosen action $a$.
+3. **Discount Factor:** $\gamma \in [0, 1)$ ensures contraction mapping and bounded cumulative returns.
+4. **Finite State-Action Cardinality:** $|\mathcal{S}| < \infty$ and $|\mathcal{A}| < \infty$.
+
+---
+
+## 3. Contraction Mapping & Convergence Proof
 
 The Bellman optimality operator $\mathcal{T}^* : \mathbb{R}^{|\mathcal{S}|} \to \mathbb{R}^{|\mathcal{S}|}$ is defined by:
 $$
@@ -92,7 +101,14 @@ function VALUE-ITERATION(mdp, theta):
 
 ---
 
-## 6. References
+## 7. Known Limitations
+
+- **Curse of Dimensionality:** Requires iterating over all states in $|\mathcal{S}|$, rendering tabular updates intractable for high-dimensional continuous or exponential combinatorial spaces.
+- **Model Requirement:** Assumes exact ground-truth transition $\mathcal{T}$ and reward $\mathcal{R}$ matrices are known in advance.
+
+---
+
+## 8. References / Citations
 
 - Bellman, R. (1957). *Dynamic Programming*. Princeton University Press.
 - Sutton, R. S., & Barto, A. G. (2018). *Reinforcement Learning: An Introduction* (2nd ed.), Chapter 4.

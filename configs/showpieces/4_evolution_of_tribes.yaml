@@ -1,0 +1,22 @@
+scenario_id: "4_evolution_of_tribes"
+title: "Evolution of Tribes: Speciation, Lineages & Behavioral Clustering"
+description: "Evolutionary artificial life simulation over generations. Uncovers emergent behavioral tribes via K-Means clustering and evaluates champions on held-out worlds."
+population:
+  size: 30
+  generations: 50
+  mutation_rate: 0.05
+  crossover_rate: 0.70
+  genome_length: 12
+environment:
+  width: 18
+  height: 18
+  resource_density: 0.12
+  hazard_density: 0.06
+  ticks_per_generation: 40
+clustering:
+  algorithm: "kmeans"
+  k: 3
+  features: ["mobility", "harvest_rate", "hazard_distance"]
+held_out_evaluation:
+  test_seeds: [801, 802, 803, 804, 805]
+

@@ -1,0 +1,16 @@
+scenario_id: "6_time_machine"
+title: "Time Machine: Deterministic History Rewind & Counterfactual Forking"
+description: "Rewind simulation from a catastrophe point, inject an alternate counterfactual decision, fork, and observe deterministic divergence metrics."
+environment:
+  width: 14
+  height: 14
+  obstacle_density: 0.15
+  resource_density: 0.05
+  hazard_density: 0.08
+  max_ticks: 60
+protocol:
+  seed: 42
+  rewind_ticks: 15
+  fork_action: "MOVE_UP"
+  divergence_metric: "euclidean_state_distance"
+

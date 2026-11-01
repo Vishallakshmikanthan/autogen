@@ -1,0 +1,856 @@
+{
+  "suite_id": "suite_hybrid_ablation_30seeds_1001_1793506873",
+  "experiment_name": "hybrid_ablation_30seeds",
+  "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+  "total_runs": 30,
+  "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+  "software_versions": {
+    "python": "3.14.6",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "pydantic": "2.14.2",
+    "os": "Windows-11-10.0.26200-SP0"
+  },
+  "aggregated_metrics": {
+    "survival_rate": {
+      "n": 30,
+      "mean": 1.0,
+      "variance": 0.0,
+      "std_dev": 0.0,
+      "standard_error": 0.0,
+      "median": 1.0,
+      "iqr": 0.0,
+      "ci_lower": 1.0,
+      "ci_upper": 1.0,
+      "confidence_level": 0.95
+    },
+    "average_return": {
+      "n": 30,
+      "mean": 218.31336564245103,
+      "variance": 7417.33612805483,
+      "std_dev": 86.123957921445,
+      "standard_error": 15.724011498400388,
+      "median": 185.38425771915468,
+      "iqr": 24.743112897732118,
+      "ci_lower": 186.15418712141627,
+      "ci_upper": 250.4725441634858,
+      "confidence_level": 0.95
+    },
+    "path_efficiency": {
+      "n": 30,
+      "mean": 0.0,
+      "variance": 0.0,
+      "std_dev": 0.0,
+      "standard_error": 0.0,
+      "median": 0.0,
+      "iqr": 0.0,
+      "ci_lower": 0.0,
+      "ci_upper": 0.0,
+      "confidence_level": 0.95
+    },
+    "resource_efficiency": {
+      "n": 30,
+      "mean": 21.3313365642451,
+      "variance": 74.1733612805483,
+      "std_dev": 8.6123957921445,
+      "standard_error": 1.572401149840039,
+      "median": 18.038425771915467,
+      "iqr": 2.4743112897732082,
+      "ci_lower": 18.115418712141626,
+      "ci_upper": 24.547254416348572,
+      "confidence_level": 0.95
+    },
+    "population_growth_rate": {
+      "n": 30,
+      "mean": 0.0,
+      "variance": 0.0,
+      "std_dev": 0.0,
+      "standard_error": 0.0,
+      "median": 0.0,
+      "iqr": 0.0,
+      "ci_lower": 0.0,
+      "ci_upper": 0.0,
+      "confidence_level": 0.95
+    },
+    "throughput_ticks_per_sec": {
+      "n": 30,
+      "mean": 336.49078860048223,
+      "variance": 9932.035288623014,
+      "std_dev": 99.6595970723493,
+      "standard_error": 18.19526979613384,
+      "median": 403.9915727395461,
+      "iqr": 199.71186969974872,
+      "ci_lower": 299.2773249959951,
+      "ci_upper": 373.70425220496935,
+      "confidence_level": 0.95
+    },
+    "total_ticks": {
+      "n": 30,
+      "mean": 50.0,
+      "variance": 0.0,
+      "std_dev": 0.0,
+      "standard_error": 0.0,
+      "median": 50.0,
+      "iqr": 0.0,
+      "ci_lower": 50.0,
+      "ci_upper": 50.0,
+      "confidence_level": 0.95
+    }
+  },
+  "comparisons": [],
+  "ablation_summary": [],
+  "records": [
+    {
+      "run_id": "run_seed_2000",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2000,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 187.2856505783075,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 18.22856505783075,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 398.59534998674917,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.12544049999996787,
+      "ticks_per_second": 398.59534998674917,
+      "timestamp": "2026-11-01T04:21:14.065254+00:00"
+    },
+    {
+      "run_id": "run_seed_2001",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2001,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 379.0134056284067,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 37.40134056284067,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 403.07140409493144,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.1240475000013248,
+      "ticks_per_second": 403.07140409493144,
+      "timestamp": "2026-11-01T04:21:14.190207+00:00"
+    },
+    {
+      "run_id": "run_seed_2002",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2002,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 192.53420641789927,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 18.753420641789926,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 433.51711568816563,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11533570000028703,
+      "ticks_per_second": 433.51711568816563,
+      "timestamp": "2026-11-01T04:21:14.305763+00:00"
+    },
+    {
+      "run_id": "run_seed_2003",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2003,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 202.25888163949574,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 19.725888163949573,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 425.08223215456536,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11762430000089807,
+      "ticks_per_second": 425.08223215456536,
+      "timestamp": "2026-11-01T04:21:14.423607+00:00"
+    },
+    {
+      "run_id": "run_seed_2004",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2004,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 177.39828950961638,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.239828950961638,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 404.9117413841607,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.12348370000108844,
+      "ticks_per_second": 404.9117413841607,
+      "timestamp": "2026-11-01T04:21:14.547441+00:00"
+    },
+    {
+      "run_id": "run_seed_2005",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2005,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 187.93632148171056,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 18.293632148171056,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 411.78834737548993,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.12142160000075819,
+      "ticks_per_second": 411.78834737548993,
+      "timestamp": "2026-11-01T04:21:14.669218+00:00"
+    },
+    {
+      "run_id": "run_seed_2006",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2006,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 168.3770936462762,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 16.337709364627617,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 435.5973651693757,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11478489999717567,
+      "ticks_per_second": 435.5973651693757,
+      "timestamp": "2026-11-01T04:21:14.784392+00:00"
+    },
+    {
+      "run_id": "run_seed_2007",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2007,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 196.23523762368106,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 19.123523762368105,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 427.6567319402458,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11691619999328395,
+      "ticks_per_second": 427.6567319402458,
+      "timestamp": "2026-11-01T04:21:14.901643+00:00"
+    },
+    {
+      "run_id": "run_seed_2008",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2008,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 180.1937979139209,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.519379791392087,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 419.1501312124344,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11928899999475107,
+      "ticks_per_second": 419.1501312124344,
+      "timestamp": "2026-11-01T04:21:15.021301+00:00"
+    },
+    {
+      "run_id": "run_seed_2009",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2009,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 189.22715564420736,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 18.422715564420734,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 414.0022174060133,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.12077229999704286,
+      "ticks_per_second": 414.0022174060133,
+      "timestamp": "2026-11-01T04:21:15.142296+00:00"
+    },
+    {
+      "run_id": "run_seed_2010",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2010,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 199.71681197345936,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 19.471681197345934,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 422.4485795448098,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11835760000394657,
+      "ticks_per_second": 422.4485795448098,
+      "timestamp": "2026-11-01T04:21:15.260854+00:00"
+    },
+    {
+      "run_id": "run_seed_2011",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2011,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 179.53237603022342,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.45323760302234,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 415.50740102441995,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.1203347999980906,
+      "ticks_per_second": 415.50740102441995,
+      "timestamp": "2026-11-01T04:21:15.381424+00:00"
+    },
+    {
+      "run_id": "run_seed_2012",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2012,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 153.53111082503145,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 14.853111082503144,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 419.9256395747128,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11906869999802439,
+      "ticks_per_second": 419.9256395747128,
+      "timestamp": "2026-11-01T04:21:15.500775+00:00"
+    },
+    {
+      "run_id": "run_seed_2013",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2013,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 396.5236816556523,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 39.15236816556523,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 426.943553806974,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11711149999609916,
+      "ticks_per_second": 426.943553806974,
+      "timestamp": "2026-11-01T04:21:15.618198+00:00"
+    },
+    {
+      "run_id": "run_seed_2014",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2014,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 182.85913677951584,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.785913677951584,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 413.9782230666271,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.12077930000668857,
+      "ticks_per_second": 413.9782230666271,
+      "timestamp": "2026-11-01T04:21:15.739247+00:00"
+    },
+    {
+      "run_id": "run_seed_2015",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2015,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 179.25048079066664,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.425048079066663,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 417.19650623289283,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11984759999904782,
+      "ticks_per_second": 417.19650623289283,
+      "timestamp": "2026-11-01T04:21:15.859322+00:00"
+    },
+    {
+      "run_id": "run_seed_2016",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2016,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 153.29615790288491,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 14.829615790288491,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 423.92460924047697,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.11794550000195159,
+      "ticks_per_second": 423.92460924047697,
+      "timestamp": "2026-11-01T04:21:15.977477+00:00"
+    },
+    {
+      "run_id": "run_seed_2017",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2017,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 179.97184741751656,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.497184741751656,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 374.07090140594374,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.13366449999739416,
+      "ticks_per_second": 374.07090140594374,
+      "timestamp": "2026-11-01T04:21:16.111387+00:00"
+    },
+    {
+      "run_id": "run_seed_2018",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2018,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 194.41530470275947,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 18.941530470275946,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 209.26788884661545,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.23892820000037318,
+      "ticks_per_second": 209.26788884661545,
+      "timestamp": "2026-11-01T04:21:16.350719+00:00"
+    },
+    {
+      "run_id": "run_seed_2019",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2019,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 191.5158228811287,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 18.65158228811287,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 207.2730453454975,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.2412276999966707,
+      "ticks_per_second": 207.2730453454975,
+      "timestamp": "2026-11-01T04:21:16.592419+00:00"
+    },
+    {
+      "run_id": "run_seed_2020",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2020,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 200.99396580023154,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 19.599396580023154,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 217.06382110752511,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.23034699999698205,
+      "ticks_per_second": 217.06382110752511,
+      "timestamp": "2026-11-01T04:21:16.823154+00:00"
+    },
+    {
+      "run_id": "run_seed_2021",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2021,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 171.38680729394935,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 16.638680729394935,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 217.40519937540077,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.22998530000040773,
+      "ticks_per_second": 217.40519937540077,
+      "timestamp": "2026-11-01T04:21:17.053609+00:00"
+    },
+    {
+      "run_id": "run_seed_2022",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2022,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 434.7876619912062,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 42.97876619912062,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 214.58269673861685,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.23301039999932982,
+      "ticks_per_second": 214.58269673861685,
+      "timestamp": "2026-11-01T04:21:17.287083+00:00"
+    },
+    {
+      "run_id": "run_seed_2023",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2023,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 415.2309908173144,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 41.023099081731445,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 216.8320661719356,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.23059319999447325,
+      "ticks_per_second": 216.8320661719356,
+      "timestamp": "2026-11-01T04:21:17.518142+00:00"
+    },
+    {
+      "run_id": "run_seed_2024",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2024,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 167.6001002797244,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 16.260010027972438,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 223.36854962341044,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.2238452999954461,
+      "ticks_per_second": 223.36854962341044,
+      "timestamp": "2026-11-01T04:21:17.742414+00:00"
+    },
+    {
+      "run_id": "run_seed_2025",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2025,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 167.1006867312385,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 16.21006867312385,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 222.51633937795202,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.2247025999968173,
+      "ticks_per_second": 222.51633937795202,
+      "timestamp": "2026-11-01T04:21:17.967461+00:00"
+    },
+    {
+      "run_id": "run_seed_2026",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2026,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 173.00497748117144,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 16.80049774811714,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 219.9487343510383,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.2273256999978912,
+      "ticks_per_second": 219.9487343510383,
+      "timestamp": "2026-11-01T04:21:18.195349+00:00"
+    },
+    {
+      "run_id": "run_seed_2027",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2027,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 398.8485569555271,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 39.38485569555271,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 217.96930207424893,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.22939010000118287,
+      "ticks_per_second": 217.96930207424893,
+      "timestamp": "2026-11-01T04:21:18.425110+00:00"
+    },
+    {
+      "run_id": "run_seed_2028",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2028,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 183.48286486000185,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 17.848286486000184,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 220.23336808446317,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.227031900001748,
+      "ticks_per_second": 220.23336808446317,
+      "timestamp": "2026-11-01T04:21:18.652502+00:00"
+    },
+    {
+      "run_id": "run_seed_2029",
+      "config_hash": "538cb62cf289e8149ae08c87e2cbb563e3f06845907ca95e9331fac0e796c0ec",
+      "seed": 2029,
+      "git_commit": "7773b64e2c001c16146cf241356566d4cddecfe9",
+      "software_versions": {
+        "python": "3.14.6",
+        "numpy": "2.5.4",
+        "scipy": "1.18.1",
+        "pydantic": "2.14.2",
+        "os": "Windows-11-10.0.26200-SP0"
+      },
+      "metrics": {
+        "survival_rate": 1.0,
+        "average_return": 165.89158602080528,
+        "path_efficiency": 0.0,
+        "resource_efficiency": 16.089158602080527,
+        "population_growth_rate": 0.0,
+        "throughput_ticks_per_sec": 220.8945966087738,
+        "total_ticks": 50.0
+      },
+      "timing_seconds": 0.22635230000014417,
+      "ticks_per_second": 220.8945966087738,
+      "timestamp": "2026-11-01T04:21:18.879358+00:00"
+    }
+  ],
+  "limitations": [],
+  "created_at": "2026-11-01T04:21:18.896398+00:00"
+}

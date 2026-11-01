@@ -8,6 +8,7 @@ import numpy as np
 
 from autogen.agents.hybrid.config import HybridAgentConfig
 from autogen.agents.hybrid.hybrid_agent import HybridCognitiveAgent
+from autogen.analytics.statistics import cohens_d as compute_cohens_d
 from autogen.simulation.core.contracts import Observation
 from autogen.simulation.environment.grid_world import EnvironmentConfig, GridWorld
 from autogen.simulation.state.types import ActionType, Position, TerrainType
@@ -26,21 +27,6 @@ class AblationResult:
     cohens_d_vs_full: float = 0.0
     episodes: int = 0
     raw_returns: list[float] = field(default_factory=list)
-
-
-def compute_cohens_d(group1: list[float], group2: list[float]) -> float:
-    """Calculates Cohen's d effect size between two independent/paired samples."""
-    n1, n2 = len(group1), len(group2)
-    if n1 < 2 or n2 < 2:
-        return 0.0
-
-    mean1, mean2 = float(np.mean(group1)), float(np.mean(group2))
-    var1, var2 = float(np.var(group1, ddof=1)), float(np.var(group2, ddof=1))
-
-    pooled_std = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
-    if pooled_std < 1e-9:
-        return 0.0
-    return float((mean1 - mean2) / pooled_std)
 
 
 class AblationArena:
@@ -82,11 +68,15 @@ class AblationArena:
             # Generate synthetic evaluation episode with hazards and food
             rng = np.random.default_rng(seed)
             hazard_positions = {
-                Position(x=int(rng.integers(1, self.grid_size)), y=int(rng.integers(1, self.grid_size)))
+                Position(
+                    x=int(rng.integers(1, self.grid_size)), y=int(rng.integers(1, self.grid_size))
+                )
                 for _ in range(self.grid_size // 2)
             }
             food_positions = {
-                Position(x=int(rng.integers(1, self.grid_size)), y=int(rng.integers(1, self.grid_size)))
+                Position(
+                    x=int(rng.integers(1, self.grid_size)), y=int(rng.integers(1, self.grid_size))
+                )
                 for _ in range(self.grid_size // 3)
             }
 
@@ -189,11 +179,21 @@ class AblationArena:
         """Runs Full and all ablated variants, computing effect sizes vs Full."""
         configs = {
             "Full": HybridAgentConfig(grid_width=self.grid_size, grid_height=self.grid_size),
-            "No_Shield": HybridAgentConfig(enable_safety_shield=False, grid_width=self.grid_size, grid_height=self.grid_size),
-            "No_Bayes": HybridAgentConfig(enable_bayes=False, grid_width=self.grid_size, grid_height=self.grid_size),
-            "No_Options": HybridAgentConfig(enable_options=False, grid_width=self.grid_size, grid_height=self.grid_size),
-            "No_AStar": HybridAgentConfig(enable_astar=False, grid_width=self.grid_size, grid_height=self.grid_size),
-            "No_Memory": HybridAgentConfig(enable_memory=False, grid_width=self.grid_size, grid_height=self.grid_size),
+            "No_Shield": HybridAgentConfig(
+                enable_safety_shield=False, grid_width=self.grid_size, grid_height=self.grid_size
+            ),
+            "No_Bayes": HybridAgentConfig(
+                enable_bayes=False, grid_width=self.grid_size, grid_height=self.grid_size
+            ),
+            "No_Options": HybridAgentConfig(
+                enable_options=False, grid_width=self.grid_size, grid_height=self.grid_size
+            ),
+            "No_AStar": HybridAgentConfig(
+                enable_astar=False, grid_width=self.grid_size, grid_height=self.grid_size
+            ),
+            "No_Memory": HybridAgentConfig(
+                enable_memory=False, grid_width=self.grid_size, grid_height=self.grid_size
+            ),
         }
 
         results: dict[str, AblationResult] = {}

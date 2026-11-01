@@ -1,0 +1,31 @@
+scenario_id: "2_algorithm_duel"
+title: "Algorithm Duel: Benchmark Race Across Graph Search Strategies"
+description: "BFS, UCS, Greedy Best-First, A*, and Weighted A* race on identical maps and seeds. Demonstrates heuristic suboptimality bounds and deceptive obstacle traps."
+maps:
+  trap_map:
+    width: 25
+    height: 25
+    layout: "concave_u_trap"
+    start: [2, 12]
+    goal: [22, 12]
+  open_plain:
+    width: 40
+    height: 40
+    obstacle_density: 0.10
+    start: [2, 2]
+    goal: [38, 38]
+algorithms:
+  - id: "bfs"
+    name: "Breadth-First Search"
+  - id: "ucs"
+    name: "Uniform Cost Search (Dijkstra)"
+  - id: "greedy"
+    name: "Greedy Best-First Search"
+  - id: "astar"
+    name: "A* (Manhattan Heuristic)"
+  - id: "weighted_astar"
+    name: "Weighted A* (w=1.5)"
+    weight: 1.5
+evaluation:
+  seed: 42
+
