@@ -13,6 +13,7 @@ from autogen.agents.baseline import (
     RandomAgent,
     SimpleReflexAgent,
 )
+from autogen.agents.evolution import EvolvedAgent, OrganismAgent
 from autogen.agents.goal_based import GoalBasedAgent
 from autogen.agents.memory_augmented_agent import MemoryAugmentedAgent
 from autogen.agents.multiagent import CooperativeAgent, IQLAgent, MARLAgent
@@ -29,6 +30,7 @@ __all__ = [
     "CooperativeAgent",
     "DQNAgent",
     "DecisionTraceBuilder",
+    "EvolvedAgent",
     "GoalBasedAgent",
     "HostileAgent",
     "IQLAgent",
@@ -36,6 +38,7 @@ __all__ = [
     "MARLAgent",
     "MemoryAugmentedAgent",
     "ModelBasedReflexAgent",
+    "OrganismAgent",
     "PPOAgent",
     "RandomAgent",
     "RandomWalkAgent",

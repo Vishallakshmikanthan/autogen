@@ -433,5 +433,37 @@ def _create_cooperative_agent(config: AgentConfig) -> BaseAgent:
 AgentRegistry.register("cooperative_agent", _create_cooperative_agent)
 
 
+def _create_evolved_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.evolution.evolved_agent import EvolvedAgent
+
+    return EvolvedAgent(
+        agent_id=config.agent_id,
+        controller=config.custom_params.get("controller"),
+        state_dim=config.custom_params.get("state_dim", 4),
+        generation=config.custom_params.get("generation", 0),
+        genome_id=config.custom_params.get("genome_id", ""),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("evolved_agent", _create_evolved_agent)
+
+
+def _create_organism_agent(config: AgentConfig) -> BaseAgent:
+    from autogen.agents.evolution.organism_agent import OrganismAgent
+
+    return OrganismAgent(
+        agent_id=config.agent_id,
+        traits=config.custom_params.get("traits"),
+        generation=config.custom_params.get("generation", 0),
+        parent_ids=config.custom_params.get("parent_ids"),
+        capabilities=config.capabilities,
+    )
+
+
+AgentRegistry.register("organism_agent", _create_organism_agent)
+
+
+
 
 
