@@ -340,6 +340,63 @@ def populate_default_catalog() -> None:
         )
     )
 
+    # 8. Village Society & Emergent Economy
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="trust_pagerank",
+            name="Directed Reciprocity Trust Graph & Stationary PageRank Status",
+            family=AlgorithmFamily.MULTIAGENT,
+            doc_path="docs/algorithms/village/social_capital_and_ethics.md",
+            complexity_time="O(K * N^2) power iteration",
+            complexity_space="O(N^2)",
+            assumptions=[
+                "Asymmetric reciprocity: beta_defect > alpha_coop",
+                "Row-stochastic trust walk with damping factor d in (0, 1)",
+            ],
+            hyperparameters={
+                "damping_factor": "PageRank teleportation complement d=0.85",
+                "alpha_coop": "Cooperative trust gain rate",
+                "beta_defect": "Defection trust loss rate",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Page, Brin, Motwani, & Winograd",
+                    title="The PageRank Citation Ranking: Bringing Order to the Web",
+                    year=1999,
+                    chapter_or_pages="Stanford InfoLab Technical Report",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="social_utility_ethics",
+            name="Multi-Objective Social Utility & Rational Risk-Reward Ethics Engine",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/social_capital_and_ethics.md",
+            complexity_time="O(|A| * N) per deliberation step",
+            complexity_space="O(|A| + N)",
+            assumptions=[
+                "Logarithmic survival utility with crisis discontinuity at tau",
+                "Independent witness line-of-sight detection probabilities",
+            ],
+            hyperparameters={
+                "w_phys": "Physiological survival weight",
+                "w_econ": "Wealth accumulation weight",
+                "w_soc": "Societal status weight",
+                "theta_risk": "Individual risk tolerance in [0, 1]",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Becker",
+                    title="Crime and Punishment: An Economic Approach",
+                    year=1968,
+                    chapter_or_pages="Journal of Political Economy, 76(2), pp. 169-217",
+                )
+            ],
+        )
+    )
 
 # Automatically populate on module load
 populate_default_catalog()
