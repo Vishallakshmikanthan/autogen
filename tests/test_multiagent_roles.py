@@ -47,3 +47,4 @@ def test_emergent_role_detector_clustering():
     # Distinct behavioral types should not all share one role
     distinct_roles = set(roles.values())
     assert len(distinct_roles) == 3
+

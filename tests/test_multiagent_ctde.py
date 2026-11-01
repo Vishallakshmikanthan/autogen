@@ -56,3 +56,4 @@ def test_opponent_pool_elo_tracking():
     assert new_rb < 1200.0
     assert snap_a.wins == 1
     assert snap_b.losses == 1
+

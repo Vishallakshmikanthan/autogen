@@ -57,3 +57,4 @@ def test_stigmergy_gradient_points_uphill():
     # Concentration to the right is higher, so grad_x must be positive
     assert gx > 0.0
     assert np.isclose(gy, 0.0)
+

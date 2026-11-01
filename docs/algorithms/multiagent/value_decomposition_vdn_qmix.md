@@ -52,3 +52,4 @@ function QMIX_FORWARD(agent_qs, global_state, hypernet_w1, hypernet_w2):
 ## 10. References
 - Sunehag, P., Lever, G., Gruslys, A., et al. (2018). Value-decomposition networks for cooperative multi-agent learning based on team reward. *AAMAS*, 2085-2087.
 - Rashid, T., Samvelyan, M., Schroeder, C., et al. (2018). QMIX: Monotonic value function factorisation for deep multi-agent reinforcement learning. *ICML*, 4295-4304.
+

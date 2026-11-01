@@ -57,3 +57,4 @@ Implemented in `CentralizedCriticMARL` and `MARLAgent`. Built entirely with NumP
 ## 10. References
 - Lowe, R., Wu, Y., Tamar, A., et al. (2017). Multi-agent actor-critic for mixed cooperative-competitive environments. *NeurIPS*, 30.
 - Foerster, J., Farquhar, G., Afouras, T., et al. (2018). Counterfactual multi-agent policy gradients. *AAAI*, 32(1).
+

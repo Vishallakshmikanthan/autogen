@@ -66,3 +66,4 @@ def test_communication_spatial_range_filtering():
     # Recipient far (dist = 8.0 > 5.0) does not receive message
     far_inbox = bus.receive("far_agent", Position(x=8, y=0))
     assert len(far_inbox) == 0
+

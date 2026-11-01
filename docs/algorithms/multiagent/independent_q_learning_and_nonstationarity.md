@@ -50,3 +50,4 @@ function IQL_STEP(observations, rewards, next_observations, terminated):
 
 ## 10. References
 - Tan, M. (1993). Multi-agent reinforcement learning: Independent vs. cooperative agents. *ICML*, 330-337.
+

@@ -73,3 +73,4 @@ class PheromoneField:
     def reset(self) -> None:
         """Clears all chemical concentrations."""
         self.grid.fill(0.0)
+

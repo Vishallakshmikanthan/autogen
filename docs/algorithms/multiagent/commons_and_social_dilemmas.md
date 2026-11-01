@@ -54,3 +54,4 @@ Implemented in `CommonsResourcePool` and `MatrixGame`. Integrates with `MultiAge
 ## 10. References
 - Hardin, G. (1968). The tragedy of the commons. *Science*, 162(3859), 1243-1248.
 - Axelrod, R., & Hamilton, W. D. (1981). The evolution of cooperation. *Science*, 211(4489), 1390-1396.
+

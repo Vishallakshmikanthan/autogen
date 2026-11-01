@@ -79,3 +79,4 @@ def test_contract_net_protocol_cost_minimization():
     assert award is not None
     assert award.winner_contractor_id == "c2"
     assert award.agreed_cost == 30.0
+

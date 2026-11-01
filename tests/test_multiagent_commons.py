@@ -41,3 +41,4 @@ def test_commons_overharvest_tipping_point_collapse():
     pool.harvest("greedy_agent_1", 50.0)
     assert pool.current_stock == 0.0
     assert pool.depletion_step is not None
+
