@@ -15,6 +15,28 @@ from autogen.intelligence.village.affective_pad import (
     AffectiveStateVector,
     EmotionCategory,
 )
+from autogen.intelligence.village.attention import (
+    Alert,
+    HabituationTracker,
+    SalienceAttentionEngine,
+)
+from autogen.intelligence.village.intention import (
+    LAMBDA_ATT,
+    Intention,
+    compute_reaction_utility,
+    compute_switching_cost,
+    should_interrupt,
+)
+from autogen.intelligence.village.personality import (
+    CANONICAL_AGENT_TRAITS,
+    Traits,
+    weights_from_traits,
+)
+from autogen.intelligence.village.reflection import (
+    Disposition,
+    MemoryEpisode,
+    ReflectionEngine,
+)
 from autogen.intelligence.village.utility_ethics import (
     ActionUtilityEvaluation,
     UtilityEngine,
@@ -25,6 +47,7 @@ from autogen.simulation.environment.village.commodities import (
     COMMODITY_CATALOG,
     CommodityType,
 )
+from autogen.simulation.environment.village.events import PerceivedEvent
 from autogen.simulation.environment.village.village_grid import (
     CANONICAL_ARCHETYPES,
     VillageActionType,
@@ -62,6 +85,7 @@ class VillagerAgent(BaseAgent):
         role: VillageRole = VillageRole.FARMER,
         utility_weights: VillagerUtilityWeights | None = None,
         capabilities: AgentCapabilities | None = None,
+        traits: Traits | None = None,
     ) -> None:
         caps = capabilities or AgentCapabilities(
             memory=True,
@@ -73,10 +97,30 @@ class VillagerAgent(BaseAgent):
         self.name = name or agent_id
         self.role = role
         self.archetype_title = CANONICAL_ARCHETYPES.get(agent_id, f"{role.value} Specialist")
-        self.utility_engine = UtilityEngine(weights=utility_weights)
-        self.affective_engine = AffectivePADEngine()
-        self.affective_state = AffectiveStateVector(agent_id=agent_id)
-        self.affective_state = AffectiveStateVector()
+
+        self.traits: Traits = traits or CANONICAL_AGENT_TRAITS.get(agent_id, Traits())
+        derived_w, self.personality = weights_from_traits(self.traits, role=self.role)
+        final_weights = utility_weights if utility_weights is not None else derived_w
+
+        self.utility_engine = UtilityEngine(weights=final_weights)
+        self.affective_engine = AffectivePADEngine(baseline=self.personality.pad_baseline)
+        self.affective_state = AffectiveStateVector(
+            agent_id=agent_id,
+            valence=self.personality.pad_baseline[0],
+            arousal=self.personality.pad_baseline[1],
+            dominance=self.personality.pad_baseline[2],
+        )
+
+        self.intention = Intention(kind="ROUTINE", commitment=1.0)
+        self.attention_tracker = HabituationTracker()
+        self.attention_engine = SalienceAttentionEngine(self.attention_tracker)
+        self.pending_alerts: list[Alert] = []
+        self.notices: list[PerceivedEvent] = []
+        self.dispositions: dict[str, Disposition] = {}
+        self.unreflected_episodes: list[MemoryEpisode] = []
+        self.last_gaze_pos: Position | None = None
+        self.last_gaze_reason: str = ""
+
         self.sabha_summoned: bool = False
         self._last_village_obs: VillageObservation | None = None
         self.belief_state = VillagerBeliefState()
@@ -93,8 +137,55 @@ class VillagerAgent(BaseAgent):
         super().observe(observation)
 
     def observe_village(self, village_obs: VillageObservation) -> None:
-        """Ingests rich sensory VillageObservation from VillageWorld."""
+        """Ingests rich sensory VillageObservation from VillageWorld and processes attention (§2.3, §2.4)."""
         self._last_village_obs = village_obs
+
+        # Phase 2b Attention: Score salience, filter to alerts and notices
+        alerts, notices, _ = self.attention_engine.process_percepts(
+            percepts=village_obs.percepts,
+            traits=self.traits,
+            arousal=self.affective_state.arousal,
+            step=village_obs.step,
+        )
+        self.notices = notices
+        self.pending_alerts = [a for a in alerts if a.eligible_step <= village_obs.step]
+
+        # Orientation / Gaze towards most salient event
+        if alerts:
+            top_p = alerts[0].percept.event
+            self.last_gaze_pos = top_p.position
+            self.last_gaze_reason = top_p.kind
+        elif village_obs.percepts:
+            self.last_gaze_pos = village_obs.percepts[0].event.position
+            self.last_gaze_reason = village_obs.percepts[0].event.kind
+
+        # Intention arbitration: check for interruptions
+        for alert in self.pending_alerts:
+            if should_interrupt(alert, self.intention, self.traits.conscientiousness):
+                kind = alert.percept.event.kind
+                if kind in ("THUNDER", "RAIN_ONSET") or alert.threat > 0.40:
+                    self.intention = Intention(
+                        kind="SHELTER",
+                        started_step=village_obs.step,
+                        commitment=0.95,
+                    )
+                    break
+                elif kind == "CRY_OUT":
+                    self.intention = Intention(
+                        kind="INVESTIGATE_NOISE",
+                        started_step=village_obs.step,
+                        target_pos=alert.percept.event.position,
+                        commitment=0.85,
+                    )
+                    break
+                elif kind == "ARRIVAL":
+                    self.intention = Intention(
+                        kind="GREET",
+                        started_step=village_obs.step,
+                        target_id=alert.percept.event.source_id,
+                        commitment=0.70,
+                    )
+                    break
 
     def update_belief(self) -> None:
         """Updates subjective beliefs, cognitive map, and episodic memory from observation."""
@@ -113,8 +204,9 @@ class VillagerAgent(BaseAgent):
         memories = list(self.belief_state.episodic_memories)
 
         for out in v_obs.witnessed_outcomes:
-            if out.description and out.description not in memories:
-                memories.append(f"[Step {out.step}] {out.description}")
+            formatted_entry = f"[Step {out.step}] {out.description}"
+            if out.description and not any(m == formatted_entry or m.endswith(out.description) for m in memories):
+                memories.append(formatted_entry)
             if out.actor_id != self.agent_id:
                 cur_t = trust_map.get(out.actor_id, 0.5)
                 if out.category == "coop":
@@ -127,6 +219,22 @@ class VillagerAgent(BaseAgent):
                     trust_map[out.actor_id] = max(0.0, round(cur_t - 0.50, 4))
                     if out.actor_id not in offenders:
                         offenders.append(out.actor_id)
+
+                is_harm = out.category in ("defect", "crime_caught", "crime_unseen")
+                is_help = out.category in ("coop", "trade")
+                val = -0.60 if is_harm else (0.50 if is_help else 0.0)
+                self.unreflected_episodes.append(
+                    MemoryEpisode(
+                        episode_id=f"ep_{out.step}_{len(self.unreflected_episodes)}_{out.actor_id}",
+                        step=out.step,
+                        other_id=out.actor_id,
+                        valence=val,
+                        importance=0.75 if is_harm else 0.40,
+                        is_harm=is_harm,
+                        is_help=is_help,
+                        description=out.description,
+                    )
+                )
 
         # Estimate subjective detection probability from visible witnesses and ambient light
         est_det = self.estimate_subjective_detection_probability(v_obs)
@@ -662,7 +770,96 @@ class VillagerAgent(BaseAgent):
                 )
             )
 
-        return self.utility_engine.rank_candidate_actions(candidates)
+        # 11. Humanlike Reactive Pathways (§2.5)
+        candidates.append(
+            self.utility_engine.evaluate_action(
+                action_type=VillageActionType.SHELTER,
+                current_hunger=h,
+                current_hydration=t,
+                current_energy=e,
+                current_coins=c,
+                current_inventory=inv,
+                clearing_prices=prices,
+                current_status=s,
+                projected_hunger=h,
+                projected_hydration=t,
+                projected_energy=min(100.0, e + 5.0),
+                projected_coins=c,
+                projected_inventory=inv,
+                projected_status=s,
+                distance_cost=dist_to("chapel") * 0.2,
+                target_zone="chapel",
+                rationale_note="Seek immediate indoor shelter from thunderstorm or hazards.",
+            )
+        )
+
+        candidates.append(
+            self.utility_engine.evaluate_action(
+                action_type=VillageActionType.INVESTIGATE_NOISE,
+                current_hunger=h,
+                current_hydration=t,
+                current_energy=e,
+                current_coins=c,
+                current_inventory=inv,
+                clearing_prices=prices,
+                current_status=s,
+                projected_hunger=h,
+                projected_hydration=t,
+                projected_energy=max(0.0, e - 2.0),
+                projected_coins=c,
+                projected_inventory=inv,
+                projected_status=s + 0.005,
+                distance_cost=dist_to("town_well") * 0.3,
+                target_zone="town_well",
+                rationale_note="Investigate sudden auditory disturbance or cry.",
+            )
+        )
+
+        candidates.append(
+            self.utility_engine.evaluate_action(
+                action_type=VillageActionType.GREET,
+                current_hunger=h,
+                current_hydration=t,
+                current_energy=e,
+                current_coins=c,
+                current_inventory=inv,
+                clearing_prices=prices,
+                current_status=s,
+                projected_hunger=h,
+                projected_hydration=t,
+                projected_energy=e,
+                projected_coins=c,
+                projected_inventory=inv,
+                projected_status=s + 0.01,
+                distance_cost=0.0,
+                target_zone="self",
+                rationale_note="Exchange greetings with a nearby villager.",
+            )
+        )
+
+        # Modulate candidates with u_react and C_switch (§2.5)
+        modulated: list[ActionUtilityEvaluation] = []
+        for cand in candidates:
+            u_react = compute_reaction_utility(cand.action_type, self.pending_alerts, self.traits)
+            c_switch = compute_switching_cost(
+                cand.action_type,
+                self.intention,
+                self.personality.switching_cost_scale,
+            )
+            u_prime = cand.expected_total_utility + LAMBDA_ATT * u_react - c_switch
+            note = cand.rationale_note
+            if u_react > 0.0 or c_switch > 0.0:
+                note += f" [u_react={u_react:.2f}, c_switch={c_switch:.2f}]"
+            modulated.append(
+                cand.model_copy(
+                    update={
+                        "expected_total_utility": round(u_prime, 4),
+                        "rationale_note": note,
+                    }
+                )
+            )
+
+        return self.utility_engine.rank_candidate_actions(modulated)
 
     def _step_toward(self, current: Position, target: Position) -> tuple[ActionType, VillageActionType]:
         """Selects the single-step Manhattan movement toward target coordinate."""
@@ -728,6 +925,13 @@ class VillagerAgent(BaseAgent):
             unethical_evals[0].expected_total_utility if unethical_evals else -999.0
         )
 
+        best_u_react = compute_reaction_utility(best.action_type, self.pending_alerts, self.traits)
+        best_c_switch = compute_switching_cost(
+            best.action_type,
+            self.intention,
+            self.personality.switching_cost_scale,
+        )
+
         rationale: dict[str, Any] = {
             "village_action": exec_v_act.value,
             "strategic_goal_action": best.action_type.value,
@@ -744,6 +948,14 @@ class VillagerAgent(BaseAgent):
             "dominant_emotion": self.affective_state.dominant_emotion.value,
             "pad_vector": list(self.affective_state.to_vector()),
             "rationale_note": best.rationale_note,
+            "alerts": [a.percept.event.kind for a in self.pending_alerts],
+            "u_react": round(best_u_react, 4),
+            "c_switch": round(best_c_switch, 4),
+            "intention": self.intention.kind,
+            "gaze": {
+                "target_pos": [self.last_gaze_pos.x, self.last_gaze_pos.y] if self.last_gaze_pos else [v_obs.position.x, v_obs.position.y],
+                "reason": self.last_gaze_reason,
+            },
             "top_candidates": [
                 {
                     "action": c.action_type.value,
@@ -796,13 +1008,37 @@ class VillagerAgent(BaseAgent):
                 weights=self.utility_weights.model_copy(update={"theta_risk": new_theta})
             )
 
+    def reflect_nightly(self) -> None:
+        """Consolidates episodic memory into dispositions at rest or night cycle (§4.4)."""
+        if not self.unreflected_episodes:
+            self.dispositions = ReflectionEngine.decay_grudges(self.dispositions, self.traits)
+            return
+        self.dispositions = ReflectionEngine.reflect_episodes(
+            unreflected=self.unreflected_episodes,
+            current_dispositions=self.dispositions,
+            traits=self.traits,
+        )
+        self.unreflected_episodes.clear()
+
     def reset(self) -> None:
         """Resets internal and belief state for a new episode or replay."""
         super().reset()
         self._last_village_obs = None
         self.belief_state = VillagerBeliefState()
-        self.affective_state = AffectiveStateVector(agent_id=self.agent_id)
-        self.affective_state = AffectiveStateVector()
+        self.affective_state = AffectiveStateVector(
+            agent_id=self.agent_id,
+            valence=self.personality.pad_baseline[0],
+            arousal=self.personality.pad_baseline[1],
+            dominance=self.personality.pad_baseline[2],
+        )
+        self.intention = Intention(kind="ROUTINE", commitment=1.0)
+        self.attention_tracker = HabituationTracker()
+        self.attention_engine = SalienceAttentionEngine(self.attention_tracker)
+        self.pending_alerts = []
+        self.notices = []
+        self.unreflected_episodes = []
+        self.last_gaze_pos = None
+        self.last_gaze_reason = ""
         self.sabha_summoned = False
         self.cumulative_reward = 0.0
         self.last_trace = None

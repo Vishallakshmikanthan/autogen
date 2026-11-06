@@ -6,9 +6,12 @@ import hashlib
 import json
 from typing import Any
 
+from pydantic import BaseModel, ConfigDict
+
 from autogen.agents.village.villager_agent import VillagerAgent
 from autogen.core.rng import SeedManager
 from autogen.core.types import DecisionTrace
+from autogen.intelligence.village.contagion import EmotionalContagionEngine
 from autogen.intelligence.village.institutions_and_lineage import (
     ChildBirthRecord,
     FuneralRecord,
@@ -22,15 +25,32 @@ from autogen.intelligence.village.institutions_and_lineage import (
 from autogen.intelligence.village.persona.llm_bridge import LLMPersonaBridge, PersonaProfile
 from autogen.intelligence.village.persona.symbolic_dialogue import VillageDialogueEvent
 from autogen.intelligence.village.persona.village_bus import VillageDialogueBus
+from autogen.intelligence.village.personality import CANONICAL_AGENT_TRAITS, Traits
+from autogen.intelligence.village.reflection import ReflectionEngine
+from autogen.intelligence.village.relationships import VillageRelationshipStore
 from autogen.intelligence.village.social_graph import TrustGraphConfig, VillageTrustGraph
 from autogen.intelligence.village.utility_ethics import VillagerUtilityWeights
 from autogen.simulation.core.contracts import Action
 from autogen.simulation.environment.village.commodities import CommodityType
+from autogen.simulation.environment.village.events import WorldEvent
 from autogen.simulation.environment.village.village_grid import (
     VillageRole,
     VillageWorld,
     VillageWorldConfig,
 )
+
+
+class HumanlikeConfig(BaseModel):
+    """Ablation toggles for humanlike agent layers (§2, §4, §8, Module M22-H)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    enable_personality: bool = True
+    enable_attention: bool = True
+    enable_intentions: bool = True
+    enable_contagion: bool = True
+    enable_reflection: bool = True
+    enable_weather: bool = True
 
 
 class VillageSimulationController:
@@ -46,7 +66,9 @@ class VillageSimulationController:
         world_config: VillageWorldConfig | None = None,
         trust_config: TrustGraphConfig | None = None,
         enable_llm_persona: bool = False,
+        humanlike_config: HumanlikeConfig | None = None,
     ) -> None:
+        self.humanlike_config = humanlike_config or HumanlikeConfig()
         self.world = VillageWorld(config=world_config)
         self.seed_manager = SeedManager(self.world.config.seed)
         self.trust_graph = VillageTrustGraph(
@@ -55,13 +77,11 @@ class VillageSimulationController:
         )
         self.dialogue_bus = VillageDialogueBus(base_hearing_radius=12.0)
         self.persona_bridge = LLMPersonaBridge(enable_external_llm=enable_llm_persona)
+        self.relationships = VillageRelationshipStore()
 
         self.lifecycle_engine = LifecycleEngine(seed=self.world.config.seed)
         self.gram_sabha_engine = GramSabhaEngine(seed=self.world.config.seed)
         self.justice_engine = JusticeRedemptionEngine(seed=self.world.config.seed)
-        self.lifecycle_engine = LifecycleEngine()
-        self.gram_sabha_engine = GramSabhaEngine()
-        self.justice_engine = JusticeRedemptionEngine()
 
         self.lineages: dict[str, LineageRecord] = {}
         self.partnerships: list[HouseholdPartnership] = []
@@ -96,35 +116,47 @@ class VillageSimulationController:
         )
 
         for idx, (aid, v_state) in enumerate(sorted(self.world.villagers.items())):
-            if v_state.role == VillageRole.GUARD:
-                w_soc = 18.0
-                w_econ = 1.0
-                theta_risk = 0.08
-            elif v_state.role == VillageRole.MERCHANT:
-                w_soc = 11.0
-                w_econ = 1.65
-                theta_risk = float(round(rng.uniform(0.28, 0.55), 3))
-            elif v_state.role == VillageRole.WANDERER:
-                w_soc = 9.5
-                w_econ = 1.1
-                theta_risk = float(round(rng.uniform(0.35, 0.65), 3))
+            if self.humanlike_config.enable_personality:
+                agent_traits = CANONICAL_AGENT_TRAITS.get(aid, Traits())
+                agent = VillagerAgent(
+                    agent_id=aid,
+                    name=v_state.name,
+                    role=v_state.role,
+                    traits=agent_traits,
+                )
+                theta_risk = agent.utility_weights.theta_risk
             else:
-                w_soc = 14.0
-                w_econ = 1.15
-                theta_risk = float(round(rng.uniform(0.15, 0.40), 3))
+                if v_state.role == VillageRole.GUARD:
+                    w_soc = 18.0
+                    w_econ = 1.0
+                    theta_risk = 0.08
+                elif v_state.role == VillageRole.MERCHANT:
+                    w_soc = 11.0
+                    w_econ = 1.65
+                    theta_risk = float(round(rng.uniform(0.28, 0.55), 3))
+                elif v_state.role == VillageRole.WANDERER:
+                    w_soc = 9.5
+                    w_econ = 1.1
+                    theta_risk = float(round(rng.uniform(0.35, 0.65), 3))
+                else:
+                    w_soc = 14.0
+                    w_econ = 1.15
+                    theta_risk = float(round(rng.uniform(0.15, 0.40), 3))
 
-            weights = VillagerUtilityWeights(
-                w_phys=2.3,
-                w_econ=w_econ,
-                w_soc=w_soc,
-                theta_risk=theta_risk,
-            )
-            self.agents[aid] = VillagerAgent(
-                agent_id=aid,
-                name=v_state.name,
-                role=v_state.role,
-                utility_weights=weights,
-            )
+                weights = VillagerUtilityWeights(
+                    w_phys=2.3,
+                    w_econ=w_econ,
+                    w_soc=w_soc,
+                    theta_risk=theta_risk,
+                )
+                agent = VillagerAgent(
+                    agent_id=aid,
+                    name=v_state.name,
+                    role=v_state.role,
+                    utility_weights=weights,
+                )
+
+            self.agents[aid] = agent
             self.personas[aid] = PersonaProfile(
                 agent_id=aid,
                 name=v_state.name,
@@ -149,16 +181,18 @@ class VillageSimulationController:
             config=self.trust_graph.config,
         )
         self.dialogue_bus = VillageDialogueBus(base_hearing_radius=12.0)
+        self.relationships = VillageRelationshipStore()
         self.lifecycle_engine = LifecycleEngine(seed=eff_seed)
         self.gram_sabha_engine = GramSabhaEngine(seed=eff_seed)
         self.justice_engine = JusticeRedemptionEngine(seed=eff_seed)
-        self.lifecycle_engine = LifecycleEngine()
-        self.gram_sabha_engine = GramSabhaEngine()
-        self.justice_engine = JusticeRedemptionEngine()
         self.partnerships = []
         self.child_births = []
         self.funerals = []
         self.active_sabha = None
+        self.sabha_ticks_remaining = 0
+        self.traces_by_agent = {}
+        self._init_agents()
+        return self.get_full_state_payload()
         self.sabha_ticks_remaining = 0
         self.traces_by_agent = {}
         self._init_agents()
@@ -323,6 +357,12 @@ class VillageSimulationController:
         self.world.update_societal_statuses(status_map)
         return self.get_full_state_payload()
 
+    def trigger_thunderstorm(self, intensity: float = 0.90) -> list[WorldEvent]:
+        """Manually triggers an immediate thunderstorm event across the village world (§2.2)."""
+        return self.world.weather_process.trigger_thunderstorm(
+            step=self.world.step_count, intensity=intensity
+        )
+
     def step(self) -> dict[str, Any]:
         """Executes one complete tick of the AUTOGEN Village Society."""
         # Phase 1 & 2: Sensory observation and belief update
@@ -337,6 +377,24 @@ class VillageSimulationController:
             agent.observe_village(v_obs)
             agent.update_belief()
 
+        # Phase 2d: Synchronous emotional contagion pass across neighboring villagers (§3.4)
+        if self.humanlike_config.enable_contagion:
+            agent_states = {aid: a.affective_state for aid, a in self.agents.items()}
+            pos_map = {
+                aid: self.world.villagers[aid].position
+                for aid in self.agents.keys()
+                if self.world.villagers[aid].is_alive
+            }
+            personalities = {aid: a.personality for aid, a in self.agents.items()}
+            next_affective = EmotionalContagionEngine.step_contagion(
+                agents=agent_states,
+                positions=pos_map,
+                personalities=personalities,
+                relationships=self.relationships,
+            )
+            for aid, st in next_affective.items():
+                self.agents[aid].affective_state = st
+
         # Phase 3: Deliberation & DecisionTrace emission
         actions: dict[str, Action] = {}
         for aid in sorted(self.agents.keys()):
@@ -350,7 +408,15 @@ class VillageSimulationController:
         # Phase 4: Environment physics, economy & crime detection resolution
         self.world.step_village(actions)
 
-        # Phase 5: Update Trust Graph from ground-truth witnessed outcomes & recompute PageRank
+        # Phase 5: Update Trust Graph and directed Relationships
+        for outcome in self.world.step_outcomes:
+            if outcome.target_id:
+                if outcome.category in ("coop", "trade"):
+                    self.relationships.record_interaction(outcome.actor_id, outcome.target_id, quality=0.40)
+                elif outcome.category in ("defect", "crime_caught", "crime_unseen"):
+                    self.relationships.record_interaction(outcome.actor_id, outcome.target_id, quality=-0.60)
+        self.relationships.step_decay()
+
         for outcome in self.world.step_outcomes:
             if outcome.category == "coop":
                 # Public philanthropy / trade boosts trust among witnesses & partners
@@ -387,6 +453,13 @@ class VillageSimulationController:
 
         new_statuses = self.trust_graph.compute_societal_status()
         self.world.update_societal_statuses(new_statuses)
+
+        # Phase 5c: Sleep-time reflection and grudge consolidation (§4.4)
+        if self.humanlike_config.enable_reflection:
+            is_night = self.world.time_of_day >= 22.0 or self.world.time_of_day <= 5.0
+            for ag in self.agents.values():
+                if is_night or ag.intention.kind in ("REST_HUT", "REST"):
+                    ag.reflect_nightly()
 
         # Phase 5b: Update Justice Forensics, Redemption Service, Lifecycle, and Gram Sabha
         for outcome in self.world.step_outcomes:
@@ -583,7 +656,7 @@ class VillageSimulationController:
 
     def compute_canonical_hash(self) -> str:
         """Computes a deterministic SHA-256 hash over world state, inventories, and trust graph."""
-        payload = {
+        payload: dict[str, Any] = {
             "step": self.world.step_count,
             "time_of_day": round(self.world.time_of_day, 4),
             "well_water": round(self.world.well.water_level, 4),
@@ -603,6 +676,11 @@ class VillageSimulationController:
                 for aid, v in sorted(self.world.villagers.items())
             ],
         }
+        if self.humanlike_config.enable_intentions:
+            payload["intentions"] = {
+                aid: self.agents[aid].intention.kind
+                for aid in sorted(self.agents.keys())
+            }
         raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
@@ -615,6 +693,27 @@ class VillageSimulationController:
             trace = self.traces_by_agent.get(aid)
             pad_st = agent.affective_state
             lin = self.lineages.get(aid)
+
+            # Humanlike telemetry fields (§7)
+            gaze_payload = {
+                "target_pos": [agent.last_gaze_pos.x, agent.last_gaze_pos.y] if agent.last_gaze_pos else [v.position.x, v.position.y],
+                "target_id": None,
+                "reason": agent.last_gaze_reason or "ambient",
+            }
+            alert_lvl = round(agent.pending_alerts[0].salience, 3) if agent.pending_alerts else 0.0
+            emote_str = pad_st.dominant_emotion.value.lower().split()[0]
+            intention_payload = {
+                "kind": agent.intention.kind,
+                "progress": round(agent.intention.progress, 2),
+                "commitment": round(agent.intention.commitment, 2),
+                "interrupted_by": agent.pending_alerts[0].percept.event.kind if agent.pending_alerts else None,
+            }
+            thought_str = "Observing village activities calmly."
+            if agent.dispositions:
+                first_disp = list(agent.dispositions.values())[0]
+                other_name = self.world.villagers[first_disp.target_id].name if first_disp.target_id in self.world.villagers else first_disp.target_id
+                thought_str = ReflectionEngine.render_thought(first_disp, other_name)
+
             villager_cards.append(
                 {
                     "agent_id": aid,
@@ -658,6 +757,12 @@ class VillageSimulationController:
                     ),
                     "episodic_memories": list(agent.belief_state.episodic_memories[-6:]),
                     "decision_trace": trace.model_dump() if trace else None,
+                    "gaze": gaze_payload,
+                    "alert_level": alert_lvl,
+                    "emote": emote_str,
+                    "intention": intention_payload,
+                    "thought": thought_str,
+                    "relationships": self.relationships.get_all_for_agent(aid),
                 }
             )
 

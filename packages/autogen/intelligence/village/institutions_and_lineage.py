@@ -52,14 +52,9 @@ class LineageRecord(BaseModel):
 class HouseholdPartnership(BaseModel):
     """Record of a married/bonded household partnership (§3.2)."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     partnership_id: str
-    partner_a: str
-    partner_b: str
-    hut_id: str
-    formed_step: int = Field(ge=0)
     partner_a: str = ""
     partner_b: str = ""
     partner_a_id: str = ""
@@ -77,7 +72,6 @@ class HouseholdPartnership(BaseModel):
 class ChildBirthRecord(BaseModel):
     """Record of a newly born villager with genetically inherited utility weights (§3.2)."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     step: int
@@ -85,11 +79,6 @@ class ChildBirthRecord(BaseModel):
     child_name: str
     parent_a: str
     parent_b: str
-    hut_id: str
-    generation: int
-    inherited_weights: VillagerUtilityWeights
-    inherited_trust_score: float
-    inherited_traditions: tuple[str, ...]
     hut_id: str = ""
     generation: int = 1
     inherited_weights: VillagerUtilityWeights = Field(default_factory=VillagerUtilityWeights)
@@ -119,7 +108,6 @@ class FuneralRecord(BaseModel):
 class LifecycleConfig(BaseModel):
     """Parameters governing aging, mortality, courtship, and genetic inheritance (§3)."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
     model_config = ConfigDict(frozen=True, extra="ignore")
 
     seed: int = 42
@@ -149,8 +137,6 @@ class LifecycleEngine:
         "Nayan",
     )
 
-    def __init__(self, config: LifecycleConfig | None = None) -> None:
-        self.config = config or LifecycleConfig()
     def __init__(self, config: LifecycleConfig | None = None, seed: int | None = None) -> None:
         if config is not None:
             self.config = config

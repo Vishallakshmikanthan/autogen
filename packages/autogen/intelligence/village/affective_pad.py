@@ -51,13 +51,8 @@ EMOTION_BEHAVIORAL_IMPACT: dict[EmotionCategory, str] = {
 class AffectiveStimulus(BaseModel):
     """Cognitive or environmental stimulus $\\text{Stimulus}_k(t)$ affecting PAD state (§2.2)."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
     model_config = ConfigDict(frozen=True, extra="ignore")
 
-    stimulus_type: str
-    valence_delta: float = Field(ge=-2.0, le=2.0)
-    arousal_delta: float = Field(ge=-2.0, le=2.0)
-    dominance_delta: float = Field(ge=-2.0, le=2.0)
     stimulus_type: str = "general"
     stimulus_name: str = ""
     valence_delta: float = Field(default=0.0, ge=-2.0, le=2.0)
@@ -74,9 +69,9 @@ class AffectiveStimulus(BaseModel):
 class AffectiveStateVector(BaseModel):
     """Continuous 3D Affective State Vector $\\mathbf{E}_i(t) = [v_i(t), a_i(t), d_i(t)]^T \\in [-1, 1]^3$."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
     model_config = ConfigDict(frozen=True, extra="ignore")
 
+    agent_id: str = ""
     valence: float = Field(default=0.10, ge=-1.0, le=1.0, description="Pleasure vs. Pain")
     arousal: float = Field(default=0.05, ge=-1.0, le=1.0, description="Alertness vs. Lethargy")
     dominance: float = Field(default=0.10, ge=-1.0, le=1.0, description="Empowerment vs. Helplessness")
@@ -139,6 +134,12 @@ class AffectivePADConfig(BaseModel):
         gt=0.0,
         le=0.6,
         description="Euclidean norm below which the agent is classified as Calm",
+    )
+    contagion_gamma: float = Field(
+        default=0.08,
+        ge=0.0,
+        le=1.0,
+        description="Base emotional contagion coupling factor (§3.4)",
     )
 
 
@@ -357,10 +358,6 @@ class AffectivePADEngine:
 
         applied_names: list[str] = []
         for stim in stimuli:
-            v_next += stim.weight * stim.valence_delta
-            a_next += stim.weight * stim.arousal_delta
-            d_next += stim.weight * stim.dominance_delta
-            applied_names.append(stim.stimulus_type)
             dv = stim.delta_v if stim.delta_v != 0.0 else stim.valence_delta
             da = stim.delta_a if stim.delta_a != 0.0 else stim.arousal_delta
             dd = stim.delta_d if stim.delta_d != 0.0 else stim.dominance_delta
@@ -379,6 +376,7 @@ class AffectivePADEngine:
         )
 
         next_vec = AffectiveStateVector(
+            agent_id=agent_id,
             valence=round(v_clamped, 4),
             arousal=round(a_clamped, 4),
             dominance=round(d_clamped, 4),

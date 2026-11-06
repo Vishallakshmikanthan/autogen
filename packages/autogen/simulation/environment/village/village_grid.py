@@ -27,6 +27,12 @@ from autogen.simulation.environment.village.commodities import (
     MarketBid,
     TradeExecution,
 )
+from autogen.simulation.environment.village.events import (
+    Modality,
+    PerceivedEvent,
+    WeatherProcess,
+    WorldEventBus,
+)
 from autogen.simulation.state.agent_state import AgentState
 from autogen.simulation.state.types import ActionType, Position, TerrainType
 from autogen.simulation.state.world_state import CellState, WorldState
@@ -88,6 +94,12 @@ class VillageActionType(str, Enum):
     SABOTAGE_GRANARY = "SABOTAGE_GRANARY"
     OFFER_BRIBE = "OFFER_BRIBE"
 
+    # Humanlike Reactive and Social Actions (§2.5, §3)
+    SHELTER = "SHELTER"
+    INVESTIGATE_NOISE = "INVESTIGATE_NOISE"
+    GREET = "GREET"
+    GAZE_AT = "GAZE_AT"
+
 
 LEGAL_VILLAGE_ACTIONS: frozenset[VillageActionType] = frozenset(
     {
@@ -115,6 +127,10 @@ LEGAL_VILLAGE_ACTIONS: frozenset[VillageActionType] = frozenset(
         VillageActionType.COMMUNITY_SERVICE,
         VillageActionType.COURTSHIP_BOND,
         VillageActionType.MOURN_AT_CHAPEL,
+        VillageActionType.SHELTER,
+        VillageActionType.INVESTIGATE_NOISE,
+        VillageActionType.GREET,
+        VillageActionType.GAZE_AT,
     }
 )
 
@@ -261,6 +277,7 @@ class VillageObservation(BaseModel):
     granary_wheat_available: float = 0.0
     well_water_available: float = 0.0
     witnessed_outcomes: tuple[VillageInteractionOutcome, ...] = ()
+    percepts: tuple[PerceivedEvent, ...] = ()
 
 
 class VillageWorldConfig(BaseModel):
@@ -314,6 +331,8 @@ class VillageWorld:
         self.step_outcomes: list[VillageInteractionOutcome] = []
         self.all_outcomes: list[VillageInteractionOutcome] = []
         self._world_state: WorldState | None = None
+        self.event_bus = WorldEventBus()
+        self.weather_process = WeatherProcess(self.event_bus)
 
         self.reset(self.config.seed)
 
@@ -332,6 +351,8 @@ class VillageWorld:
             self._detection_rng = self.seed_manager.spawn_stream("village_detection")
             self._forage_rng = self.seed_manager.spawn_stream("village_forage")
 
+        self.event_bus = WorldEventBus()
+        self.weather_process = WeatherProcess(self.event_bus)
         self.step_count = 0
         self.time_of_day = self.config.initial_time_of_day
         self.drought_active = self.config.drought_active
@@ -838,6 +859,14 @@ class VillageWorld:
             or out.category in ("coop", "crime_caught", "trade")
         )
 
+        is_indoor = cur_zone is not None and cur_zone.zone_type == ZoneType.PRIVATE_HUTS
+        percepts = self.event_bus.perceive(
+            agent_pos=v.position,
+            vision_radius=self.config.vision_radius,
+            is_indoor=is_indoor,
+            step=self.step_count,
+        )
+
         return VillageObservation(
             agent_id=agent_id,
             step=self.step_count,
@@ -864,6 +893,7 @@ class VillageWorld:
             granary_wheat_available=self.granary.storage.get(CommodityType.WHEAT),
             well_water_available=self.well.water_level,
             witnessed_outcomes=witnessed,
+            percepts=percepts,
         )
 
     def get_observation(self, agent_id: str) -> Observation:
@@ -975,6 +1005,39 @@ class VillageWorld:
         for fid, field in self.fields.items():
             regrown = min(field.max_capacity, field.crop_available + field.regrowth_rate)
             self.fields[fid] = field.model_copy(update={"crop_available": round(regrown, 4)})
+
+        # Phase 1b: World Events generation (Weather, Crises, Arrivals)
+        self.weather_process.step(self.step_count, self._detection_rng)
+
+        for aid_c, v_c in self.villagers.items():
+            if v_c.is_alive and (v_c.hunger <= 18.0 or v_c.health <= 20.0):
+                self.event_bus.create_and_emit(
+                    step=self.step_count,
+                    kind="CRY_OUT",
+                    modality=Modality.AUDITORY,
+                    position=v_c.position,
+                    intensity=0.85,
+                    valence_hint=-0.75,
+                    source_id=aid_c,
+                    payload={"hunger": v_c.hunger, "health": v_c.health},
+                )
+
+        v_list = list(self.villagers.values())
+        for i_idx in range(len(v_list)):
+            for j_idx in range(i_idx + 1, len(v_list)):
+                vi, vj = v_list[i_idx], v_list[j_idx]
+                if vi.is_alive and vj.is_alive:
+                    if math.hypot(vi.position.x - vj.position.x, vi.position.y - vj.position.y) <= 2.0:
+                        self.event_bus.create_and_emit(
+                            step=self.step_count,
+                            kind="ARRIVAL",
+                            modality=Modality.SOCIAL,
+                            position=vi.position,
+                            intensity=0.50,
+                            valence_hint=0.20,
+                            source_id=vi.agent_id,
+                            target_id=vj.agent_id,
+                        )
 
         # Phase 2: Resolve each villager's action deterministically in sorted agent_id order
         for aid in sorted(self.villagers.keys()):
@@ -1659,6 +1722,54 @@ class VillageWorld:
                             description=f"{v.name} attempted to bribe a watch guard with {bribe_amt:.1f} coins.",
                         )
                     )
+
+                elif v_act == VillageActionType.SHELTER:
+                    home_h = self.huts.get(v.home_hut_id)
+                    shelter_pos = home_h.position if home_h else self.zones["chapel"].center
+                    if pos != shelter_pos:
+                        dx = 1 if shelter_pos.x > pos.x else (-1 if shelter_pos.x < pos.x else 0)
+                        dy = 1 if shelter_pos.y > pos.y else (-1 if shelter_pos.y < pos.y else 0)
+                        pos = Position(pos.x + dx, pos.y + dy)
+                    else:
+                        energy = min(v.max_energy, energy + 0.5)
+                    self.step_outcomes.append(
+                        VillageInteractionOutcome(
+                            step=self.step_count,
+                            actor_id=aid,
+                            action_type=v_act,
+                            category="work",
+                            description=f"{v.name} sought shelter from environmental hazards.",
+                        )
+                    )
+
+                elif v_act == VillageActionType.INVESTIGATE_NOISE:
+                    target_p = self.zones["town_well"].center
+                    dx = 1 if target_p.x > pos.x else (-1 if target_p.x < pos.x else 0)
+                    dy = 1 if target_p.y > pos.y else (-1 if target_p.y < pos.y else 0)
+                    pos = Position(pos.x + dx, pos.y + dy)
+                    self.step_outcomes.append(
+                        VillageInteractionOutcome(
+                            step=self.step_count,
+                            actor_id=aid,
+                            action_type=v_act,
+                            category="work",
+                            description=f"{v.name} moved to investigate an unusual sound.",
+                        )
+                    )
+
+                elif v_act == VillageActionType.GREET:
+                    self.step_outcomes.append(
+                        VillageInteractionOutcome(
+                            step=self.step_count,
+                            actor_id=aid,
+                            action_type=v_act,
+                            category="coop",
+                            description=f"{v.name} exchanged neighborly greetings.",
+                        )
+                    )
+
+                elif v_act == VillageActionType.GAZE_AT:
+                    pass
 
             # Survival health check
             health = v.health

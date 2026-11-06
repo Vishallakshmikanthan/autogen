@@ -452,5 +452,143 @@ def populate_default_catalog() -> None:
         )
     )
 
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="personality_mapping",
+            name="Big Five Personality Parameter Modulation & Mehrabian Baseline",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/personality_mapping.md",
+            complexity_time="O(1) algebraic parameter calculation",
+            complexity_space="O(1) vector",
+            assumptions=[
+                "Stable Big Five trait dimensions OCEAN in [0, 1]",
+                "Monotonic modulation of utility weights, risk aversion, and switching costs",
+            ],
+            hyperparameters={
+                "w_soc_scale": "Base social weight scalar",
+                "w_econ_scale": "Base economic weight scalar",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Mehrabian / Goldberg",
+                    title="Basic Dimensions for a General Psychological Theory / The Structure of Phenotypic Personality Traits",
+                    year=1980,
+                    chapter_or_pages="Oelgeschlager, Gunn & Hain / American Psychologist, 48(1), pp. 26-34",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="salience_attention",
+            name="Multi-Modal Salience Attention Filtering & Habituation Budget",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/salience_attention.md",
+            complexity_time="O(P log P) sorting over P percepts",
+            complexity_space="O(K) alert budget buffer",
+            assumptions=[
+                "Exponential spatial acoustic attenuation with L=6 tiles",
+                "Habituation rises on repeats and decays exponentially over ticks",
+            ],
+            hyperparameters={
+                "theta_notice": "Threshold for passive observation encoding",
+                "theta_alert": "Threshold for intention interruption eligibility",
+                "theta_startle": "Threshold for involuntary reflex and immediate latency",
+                "attn_budget": "Maximum alerts processed per tick",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Itti, Koch, & Niebur / Broadbent",
+                    title="A Model of Saliency-Based Visual Attention / Perception and Communication",
+                    year=1998,
+                    chapter_or_pages="IEEE TPAMI, 20(11), pp. 1254-1259 / Pergamon Press",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="intention_arbitration",
+            name="Utility-Guided Intention Commitment & Switching Cost Arbitration",
+            family=AlgorithmFamily.PLANNING,
+            doc_path="docs/algorithms/village/intention_arbitration.md",
+            complexity_time="O(A) evaluation over candidate actions",
+            complexity_space="O(1) active intention record",
+            assumptions=[
+                "Commitment decays as uncompleted time elapses",
+                "Preemption requires alert urgency to exceed commitment stickiness plus hysteresis margin",
+            ],
+            hyperparameters={
+                "hysteresis": "Hysteresis threshold margin to prevent action oscillation",
+                "kappa_sw": "Base action switching penalty scalar",
+                "lambda_att": "Reaction utility scalar",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Bratman / Mark",
+                    title="Intention, Plans, and Practical Reason / Architecture Tricks of the AI Trade",
+                    year=1987,
+                    chapter_or_pages="Harvard University Press / GDC Proceedings",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="emotional_contagion",
+            name="Synchronous Multi-Agent Emotional Contagion Coupling",
+            family=AlgorithmFamily.MULTIAGENT,
+            doc_path="docs/algorithms/village/emotional_contagion.md",
+            complexity_time="O(N^2) pairwise proximity evaluation",
+            complexity_space="O(N) synchronous delta buffer",
+            assumptions=[
+                "Synchronous update ensures strict permutation order-independence",
+                "Asymmetric negativity bias amplifies negative emotional spread",
+            ],
+            hyperparameters={
+                "gamma_0": "Base contagion coupling susceptibility",
+                "max_axis_delta": "Per-axis contagion clamp per tick",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Hatfield, Cacioppo, & Rapson",
+                    title="Emotional Contagion",
+                    year=1993,
+                    chapter_or_pages="Current Directions in Psychological Science, 2(3), pp. 96-100",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="reflection_dispositions",
+            name="Nightly Episodic Reflection, Grudge Consolidation & Forgiveness",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/reflection_dispositions.md",
+            complexity_time="O(M log M) top-k evidence retrieval over unreflected episodes",
+            complexity_space="O(D) bounded dispositions per agent",
+            assumptions=[
+                "Slow exponential integration of net valence into durable dispositions",
+                "Asymmetric harm vs. help weighting with Neuroticism-modulated grudge retention",
+            ],
+            hyperparameters={
+                "decay_base": "Per-tick grudge retention factor base",
+                "max_evidence_per_target": "Maximum evidence memory IDs preserved per disposition",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Park et al.",
+                    title="Generative Agents: Interactive Simulacra of Human Behavior",
+                    year=2023,
+                    chapter_or_pages="UIST '23 Proceedings, pp. 1-22",
+                )
+            ],
+        )
+    )
+
 # Automatically populate on module load
 populate_default_catalog()
