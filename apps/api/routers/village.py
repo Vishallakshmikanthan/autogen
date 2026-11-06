@@ -21,18 +21,9 @@ def get_village_controller() -> VillageSimulationController:
     """Returns or initializes the singleton VillageSimulationController."""
     global _VILLAGE_CONTROLLER
     if _VILLAGE_CONTROLLER is None:
-        from autogen.intelligence.village.persona.llm_bridge import _read_dotenv_configs
-
-        cfg = _read_dotenv_configs()
-        has_key = bool(
-            cfg.get("NEMOTRON_API_KEY")
-            or cfg.get("NVIDIA_API_KEY")
-            or cfg.get("OPENAI_API_KEY")
-            or cfg.get("GEMINI_API_KEY")
-        )
         _VILLAGE_CONTROLLER = VillageSimulationController(
             world_config=VillageWorldConfig(width=40, height=40, seed=42),
-            enable_llm_persona=has_key,
+            enable_llm_persona=False,
         )
     return _VILLAGE_CONTROLLER
 
@@ -123,9 +114,61 @@ def toggle_village_drought(active: bool = True) -> Any:
     )
 
 
+class VillageSabhaRequest(BaseModel):
+    """Request payload for convoking a Gram Sabha Town Assembly."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    emergency_reason: str | None = None
+    accused_id: str | None = None
+
+
+class VillageLineageRequest(BaseModel):
+    """Request payload for forming a household partnership and birthing a child villager."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    parent_a_id: str = "villager_arun"
+    parent_b_id: str = "villager_meera"
+    child_name: str | None = None
+
+
+@router.post("/sabha", response_model=APIResponseEnvelope[dict[str, Any]])
+def convoke_village_sabha(req: VillageSabhaRequest | None = None) -> Any:
+    """Summons the Gram Sabha Town Assembly at the Town Square amphitheater."""
+    ctrl = get_village_controller()
+    cfg = req or VillageSabhaRequest()
+    state = ctrl.convoke_sabha(
+        emergency_reason=cfg.emergency_reason,
+        accused_id=cfg.accused_id,
+    )
+    return APIResponseEnvelope(
+        success=True,
+        data=state,
+        message="Gram Sabha Town Assembly convoked at Town Square",
+    )
+
+
+@router.post("/lineage", response_model=APIResponseEnvelope[dict[str, Any]])
+def trigger_village_lineage(req: VillageLineageRequest | None = None) -> Any:
+    """Forms a household partnership and spawns a new child villager with inherited traits."""
+    ctrl = get_village_controller()
+    cfg = req or VillageLineageRequest()
+    state = ctrl.trigger_courtship_and_birth(
+        parent_a_id=cfg.parent_a_id,
+        parent_b_id=cfg.parent_b_id,
+        child_name=cfg.child_name,
+    )
+    return APIResponseEnvelope(
+        success=True,
+        data=state,
+        message="Household partnership formed and next-generation child villager spawned",
+    )
+
+
 @router.get("/experiments", response_model=APIResponseEnvelope[list[dict[str, Any]]])
 def get_village_experiments() -> Any:
-    """Runs and returns the 3 reproducible Phase 6 Village Society empirical scenarios."""
+    """Runs and returns the reproducible Phase 6 Village Society empirical scenarios."""
     results = run_all_village_experiments()
     return APIResponseEnvelope(
         success=True,

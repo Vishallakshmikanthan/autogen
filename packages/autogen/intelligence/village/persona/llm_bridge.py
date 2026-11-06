@@ -103,6 +103,8 @@ class LLMPersonaBridge:
         # Auto-activate if a valid key was found and enable_external_llm wasn't explicitly disabled
         if self.has_valid_api_key and not enable_external_llm:
             self.enable_external_llm = True
+        # Activate external LLM only when explicitly enabled AND a valid key/callback is present
+        self.enable_external_llm = bool(enable_external_llm and self.has_valid_api_key)
 
     @property
     def has_valid_api_key(self) -> bool:

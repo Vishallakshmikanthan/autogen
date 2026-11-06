@@ -360,10 +360,10 @@ def populate_default_catalog() -> None:
             },
             citations=[
                 CitationRecord(
-                    author_or_source="Page, Brin, Motwani, & Winograd",
-                    title="The PageRank Citation Ranking: Bringing Order to the Web",
+                    author_or_source="Russell & Norvig / Page, Brin, Motwani, & Winograd",
+                    title="Artificial Intelligence: A Modern Approach / The PageRank Citation Ranking",
                     year=1999,
-                    chapter_or_pages="Stanford InfoLab Technical Report",
+                    chapter_or_pages="Chapter 21 / Stanford InfoLab Technical Report",
                 )
             ],
         )
@@ -389,10 +389,64 @@ def populate_default_catalog() -> None:
             },
             citations=[
                 CitationRecord(
-                    author_or_source="Becker",
-                    title="Crime and Punishment: An Economic Approach",
+                    author_or_source="Russell & Norvig / Becker",
+                    title="Artificial Intelligence: A Modern Approach / Crime and Punishment: An Economic Approach",
                     year=1968,
-                    chapter_or_pages="Journal of Political Economy, 76(2), pp. 169-217",
+                    chapter_or_pages="Chapter 16 / Journal of Political Economy, 76(2), pp. 169-217",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="affective_pad_occ",
+            name="Ortony-Clore-Collins & Continuous 3D PAD Affective Emotional Engine",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/social_capital_and_ethics.md",
+            complexity_time="O(K) appraisal + linear ODE decay per step",
+            complexity_space="O(1) state vector in [-1, 1]^3",
+            assumptions=[
+                "Continuous affective state E_i(t) = [v_i, a_i, d_i]^T in [-1, 1]^3",
+                "Exponential decay toward baseline personality with additive OCC appraisal stimuli",
+            ],
+            hyperparameters={
+                "lambda_decay": "Temporal emotion decay rate in (0, 1)",
+                "baseline_pad": "Personality baseline vector in [-1, 1]^3",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Mehrabian & Russell / Ortony, Clore, & Collins",
+                    title="An Approach to Environmental Psychology / The Cognitive Structure of Emotions",
+                    year=1974,
+                    chapter_or_pages="MIT Press / Cambridge University Press",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="gram_sabha_consensus",
+            name="Gram Sabha Assembly Deliberation & Trust-Weighted PageRank Consensus",
+            family=AlgorithmFamily.MULTIAGENT,
+            doc_path="docs/algorithms/village/social_capital_and_ethics.md",
+            complexity_time="O(N * M) voting aggregation",
+            complexity_space="O(N + M)",
+            assumptions=[
+                "Decisions weighted by societal status PageRank S_i(t)",
+                "Periodic or crisis-triggered assembly convocation at Town Square amphitheater",
+            ],
+            hyperparameters={
+                "quorum_threshold": "Minimum voter attendance fraction",
+                "mandatory_tithe_rate": "Post-crisis civic grain levy fraction",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Weiss / Sen & Ostrom",
+                    title="Multiagent Systems / Governing the Commons: The Evolution of Institutions",
+                    year=1999,
+                    chapter_or_pages="Chapter 2 / Cambridge University Press",
                 )
             ],
         )

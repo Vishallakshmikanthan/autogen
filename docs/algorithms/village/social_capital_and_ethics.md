@@ -98,6 +98,35 @@ ALGORITHM TrustPageRank(T, d = 0.85, tol = 1e-8, max_iter = 200):
 
 ---
 
+## 7b. Affective PAD Emotional Dynamics & Gram Sabha Deliberation (§2 & §5)
+
+### Mathematical Model: Continuous 3D PAD Emotional State Vector
+
+Each villager $i$ maintains a continuous affective state vector:
+$$\mathbf{E}_i(t) = \begin{bmatrix} v_i(t) \\ a_i(t) \\ d_i(t) \end{bmatrix} \in [-1, 1]^3$$
+where $v_i$ is Valence (pleasure/displeasure), $a_i$ is Arousal (alertness/energy), and $d_i$ is Dominance (sense of agency/control).
+
+The discrete-time dynamic update equation is:
+$$\mathbf{E}_i(t+1) = \lambda_{\text{decay}} \mathbf{E}_i(t) + (1 - \lambda_{\text{decay}}) \mathbf{E}_{\text{baseline}} + \sum_{k} \mathbf{w}_k \cdot \text{Stimulus}_k(t)$$
+constrained by Euclidean/hypercube projection $\|\mathbf{E}_i(t+1)\|_\infty \le 1$.
+
+Discrete emotions emerge from octant clustering in PAD space:
+* **Joy / Gratitude:** $v > 0.3, a > 0.0, d > 0.0$
+* **Grief / Despair:** $v < -0.3, a < 0.0, d < -0.2$
+* **Malice / Hostility:** $v < -0.2, a > 0.2, d > 0.1$
+* **Jealousy / Envy:** $v < -0.2, a > 0.1, d < 0.0$
+* **Guilt / Remorse:** $v < -0.2, a < 0.2, d < -0.2$
+* **Righteous Anger / Authority:** $v < -0.1, a > 0.3, d > 0.3$
+* **Calm / Composed:** otherwise
+
+### Gram Sabha Trust-Weighted Consensus
+
+In the Town Assembly, policy adoption or trial verdicts are weighted by each citizen's societal status PageRank $\mathcal{S}_i(t)$:
+$$V_{\text{consensus}} = \frac{\sum_{i \in \text{Quorum}} \mathcal{S}_i(t) \cdot y_i}{\sum_{i \in \text{Quorum}} \mathcal{S}_i(t)}$$
+where $y_i \in \{+1, -1\}$ is voter $i$'s vote based on ethical and communal utility. If $V_{\text{consensus}} > 0.50$, the policy or verdict is enacted.
+
+---
+
 ## 8. Verification Strategy & Test Oracles
 
 1. **Trust Boundedness Oracle:** Verify $\forall i, j: T_{j \to i}(t) \in [0, 1]$ after 1,000 random cooperation, defection, crime, and gossip events.

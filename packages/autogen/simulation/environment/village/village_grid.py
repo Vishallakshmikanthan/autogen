@@ -41,6 +41,12 @@ class VillageRole(str, Enum):
     GUARD = "Guard"
     WOODCUTTER = "Woodcutter"
     WANDERER = "Wanderer"
+    MAGISTRATE = "Magistrate"
+    BLACKSMITH = "Blacksmith"
+    MILLER = "Miller"
+    HERBALIST = "Herbalist"
+    OUTCAST = "Outcast"
+    BARD = "Bard"
 
 
 class VillageActionType(str, Enum):
@@ -53,7 +59,7 @@ class VillageActionType(str, Enum):
     MOVE_WEST = "MOVE_WEST"
     STAY = "STAY"
 
-    # Legal survival & economic pathways
+    # Legal survival, craft, & civic pathways
     HARVEST_FIELD = "HARVEST_FIELD"
     FORAGE_FOREST = "FORAGE_FOREST"
     DRAW_WATER = "DRAW_WATER"
@@ -63,12 +69,24 @@ class VillageActionType(str, Enum):
     TITHE_GRANARY = "TITHE_GRANARY"
     CLAIM_FAMINE_RELIEF = "CLAIM_FAMINE_RELIEF"
     PATROL_GUARD = "PATROL_GUARD"
+    MILL_WHEAT = "MILL_WHEAT"
+    FORGE_TOOLS = "FORGE_TOOLS"
+    BREW_HEALING_BROTH = "BREW_HEALING_BROTH"
+    PRESIDE_SABHA = "PRESIDE_SABHA"
+    ATTEND_SABHA = "ATTEND_SABHA"
+    SING_BALLAD = "SING_BALLAD"
+    INVESTIGATE_CRIME = "INVESTIGATE_CRIME"
+    COMMUNITY_SERVICE = "COMMUNITY_SERVICE"
+    COURTSHIP_BOND = "COURTSHIP_BOND"
+    MOURN_AT_CHAPEL = "MOURN_AT_CHAPEL"
 
     # Unethical / Criminal pathways
     STEAL_GRANARY = "STEAL_GRANARY"
     STEAL_HUT_CHEST = "STEAL_HUT_CHEST"
     HOARD_AND_GOUGE = "HOARD_AND_GOUGE"
     FREE_RIDE_COMMONS = "FREE_RIDE_COMMONS"
+    SABOTAGE_GRANARY = "SABOTAGE_GRANARY"
+    OFFER_BRIBE = "OFFER_BRIBE"
 
 
 LEGAL_VILLAGE_ACTIONS: frozenset[VillageActionType] = frozenset(
@@ -87,6 +105,16 @@ LEGAL_VILLAGE_ACTIONS: frozenset[VillageActionType] = frozenset(
         VillageActionType.TITHE_GRANARY,
         VillageActionType.CLAIM_FAMINE_RELIEF,
         VillageActionType.PATROL_GUARD,
+        VillageActionType.MILL_WHEAT,
+        VillageActionType.FORGE_TOOLS,
+        VillageActionType.BREW_HEALING_BROTH,
+        VillageActionType.PRESIDE_SABHA,
+        VillageActionType.ATTEND_SABHA,
+        VillageActionType.SING_BALLAD,
+        VillageActionType.INVESTIGATE_CRIME,
+        VillageActionType.COMMUNITY_SERVICE,
+        VillageActionType.COURTSHIP_BOND,
+        VillageActionType.MOURN_AT_CHAPEL,
     }
 )
 
@@ -96,6 +124,8 @@ UNETHICAL_VILLAGE_ACTIONS: frozenset[VillageActionType] = frozenset(
         VillageActionType.STEAL_HUT_CHEST,
         VillageActionType.HOARD_AND_GOUGE,
         VillageActionType.FREE_RIDE_COMMONS,
+        VillageActionType.SABOTAGE_GRANARY,
+        VillageActionType.OFFER_BRIBE,
     }
 )
 
@@ -113,6 +143,19 @@ CANONICAL_VILLAGERS: tuple[tuple[str, str, VillageRole], ...] = (
     ("villager_nila", "Nila", VillageRole.WANDERER),
 )
 
+CANONICAL_ARCHETYPES: dict[str, str] = {
+    "villager_arun": "Master Farmer & Harvester",
+    "villager_meera": "Grain Miller & Baker",
+    "villager_ravi": "Blacksmith & Toolmaker",
+    "villager_kavya": "Water-Carrier & Well Keeper",
+    "villager_imran": "Herbalist & Apothecary",
+    "villager_lata": "Village Magistrate & Elder",
+    "villager_bheem": "Double-Auction Merchant",
+    "villager_tara": "Captain of the Watch",
+    "villager_dev": "Town Guard & Investigator",
+    "villager_nila": "Wandering Bard & Chronicler",
+}
+
 
 class VillagerPhysicalState(BaseModel):
     """Ground-truth physical and economic state of a villager owned by VillageWorld."""
@@ -122,16 +165,24 @@ class VillagerPhysicalState(BaseModel):
     agent_id: str
     name: str
     role: VillageRole
+    archetype_title: str = "Villager"
     position: Position
     home_hut_id: str
     hunger: float = Field(default=80.0, ge=0.0, le=100.0, description="H_i in [0, 100]")
     hydration: float = Field(default=80.0, ge=0.0, le=100.0, description="T_i in [0, 100]")
     energy: float = Field(default=85.0, ge=0.0, le=100.0, description="E_i in [0, 100]")
+    max_energy: float = Field(default=100.0, ge=25.0, le=100.0, description="Age-adjusted E_max")
     health: float = Field(default=100.0, ge=0.0, le=100.0)
     coins: float = Field(default=25.0, ge=0.0, description="Liquid coin balance C_i")
     inventory: CommodityInventory = Field(default_factory=CommodityInventory)
     societal_status: float = Field(default=0.1, ge=0.0, le=1.0, description="PageRank S_i(t)")
     is_alive: bool = True
+    age_ticks: int = Field(default=160, ge=0)
+    generation: int = Field(default=1, ge=1)
+    life_stage: str = "Adult"
+    dominant_emotion: str = "Calm / Composed"
+    pad_vector: tuple[float, float, float] = (0.1, 0.05, 0.1)
+    starvation_streak: int = Field(default=0, ge=0)
     in_pillory_ticks: int = Field(default=0, ge=0)
     crimes_committed: int = Field(default=0, ge=0)
     crimes_detected: int = Field(default=0, ge=0)
@@ -424,6 +475,18 @@ class VillageWorld:
                 radius_3d=8.0,
                 world_3d_coords=(-25.0, 14.0),
             ),
+            "chapel": VillageZone(
+                zone_id="chapel",
+                zone_type=ZoneType.CHAPEL,
+                label="St. Aurelia Chapel & Memorials",
+                x_min=min(w - 5, cx + 6),
+                y_min=max(2, cy - 8),
+                x_max=min(w - 2, cx + 10),
+                y_max=max(4, cy - 4),
+                center=Position(min(w - 3, cx + 8), max(3, cy - 6)),
+                radius_3d=9.0,
+                world_3d_coords=(42.0, -22.0),
+            ),
         }
 
         self.well = TownWell(
@@ -512,21 +575,28 @@ class VillageWorld:
                     CommodityType.WHEAT: 3.0 if role == VillageRole.FARMER else 1.5,
                     CommodityType.WATER: 3.0 if role == VillageRole.WATER_CARRIER else 1.5,
                     CommodityType.BERRIES: 2.0 if role == VillageRole.WANDERER else 0.5,
+                    CommodityType.TOOLS: 1.0 if agent_id in ("villager_arun", "villager_ravi") else 0.0,
+                    CommodityType.HERBS: 2.0 if agent_id == "villager_imran" else 0.0,
+                    CommodityType.IRON_ORE: 2.0 if agent_id == "villager_ravi" else 0.0,
                 }
             )
             self.villagers[agent_id] = VillagerPhysicalState(
                 agent_id=agent_id,
                 name=name,
                 role=role,
+                archetype_title=CANONICAL_ARCHETYPES.get(agent_id, f"{role.value} Specialist"),
                 position=hut_pos,
                 home_hut_id=hut_id,
                 hunger=82.0,
                 hydration=84.0,
                 energy=88.0,
+                max_energy=92.0 if agent_id == "villager_lata" else 100.0,
                 health=100.0,
                 coins=45.0 if role == VillageRole.MERCHANT else 22.0,
                 inventory=initial_inv,
                 societal_status=round(1.0 / len(CANONICAL_VILLAGERS), 4),
+                age_ticks=250 if agent_id == "villager_lata" else 140 + idx * 8,
+                life_stage="Elder" if agent_id == "villager_lata" else "Adult",
             )
 
     def spawn_custom_villager(
@@ -1018,13 +1088,16 @@ class VillageWorld:
 
             elif v_act == VillageActionType.HARVEST_FIELD:
                 field = self.fields["farm_0"]
-                harvested = min(3.2, field.crop_available)
+                has_tools = inv.get(CommodityType.TOOLS) >= 1.0
+                tool_bonus = 0.6 if has_tools else 0.0
+                energy_cost = 1.5 if has_tools else 2.5
+                harvested = min(3.2 + tool_bonus, field.crop_available)
                 if harvested > 0.0:
                     self.fields["farm_0"] = field.model_copy(
                         update={"crop_available": round(field.crop_available - harvested, 4)}
                     )
                     inv = inv.with_delta(CommodityType.WHEAT, harvested)
-                    energy = max(0.0, energy - 2.5)
+                    energy = max(0.0, energy - energy_cost)
                     self.step_outcomes.append(
                         VillageInteractionOutcome(
                             step=self.step_count,
@@ -1033,9 +1106,198 @@ class VillageWorld:
                             category="work",
                             commodity=CommodityType.WHEAT,
                             quantity=harvested,
-                            description=f"{v.name} harvested {harvested:.1f} wheat from the fields.",
+                            description=(
+                                f"{v.name} harvested {harvested:.1f} wheat from the fields"
+                                + (" using iron tools (-40% energy cost)." if has_tools else ".")
+                            ),
                         )
                     )
+
+            elif v_act == VillageActionType.MILL_WHEAT:
+                wheat_in = min(2.0, inv.get(CommodityType.WHEAT))
+                if wheat_in < 0.8 and self.granary.storage.get(CommodityType.WHEAT) >= 2.0:
+                    # Miller draws grain allotment from Granary to mill into village flour & bread
+                    wheat_in = 1.5
+                    self.granary = self.granary.model_copy(
+                        update={"storage": self.granary.storage.with_delta(CommodityType.WHEAT, -wheat_in)}
+                    )
+                else:
+                    inv = inv.with_delta(CommodityType.WHEAT, -wheat_in)
+                if wheat_in > 0.0:
+                    flour_out = round(wheat_in * 1.1, 3)
+                    bread_out = round(wheat_in * 1.25, 3)
+                    inv = inv.with_delta(CommodityType.FLOUR, flour_out * 0.4)
+                    inv = inv.with_delta(CommodityType.BREAD, bread_out)
+                    self.granary = self.granary.model_copy(
+                        update={"storage": self.granary.storage.with_delta(CommodityType.BREAD, round(bread_out * 0.5, 3))}
+                    )
+                    energy = max(0.0, energy - 1.8)
+                    coins = round(coins + 1.8, 4)
+                    self.step_outcomes.append(
+                        VillageInteractionOutcome(
+                            step=self.step_count,
+                            actor_id=aid,
+                            action_type=v_act,
+                            category="coop",
+                            commodity=CommodityType.BREAD,
+                            quantity=bread_out,
+                            description=f"{v.name} milled {wheat_in:.1f} wheat into {flour_out:.1f} flour and baked {bread_out:.1f} loaves of bread.",
+                        )
+                    )
+
+            elif v_act == VillageActionType.FORGE_TOOLS:
+                timber_used = min(1.0, inv.get(CommodityType.TIMBER))
+                if timber_used > 0.0:
+                    inv = inv.with_delta(CommodityType.TIMBER, -timber_used)
+                tools_forged = 1.5
+                inv = inv.with_delta(CommodityType.TOOLS, tools_forged)
+                energy = max(0.0, energy - 2.2)
+                coins = round(coins + 2.2, 4)
+                # Supply a forged tool to any farmer lacking one
+                for f_id, f_v in updated_villagers.items():
+                    if f_v.role == VillageRole.FARMER and f_v.inventory.get(CommodityType.TOOLS) < 1.0:
+                        updated_villagers[f_id] = f_v.model_copy(
+                            update={"inventory": f_v.inventory.with_delta(CommodityType.TOOLS, 1.0)}
+                        )
+                        break
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        commodity=CommodityType.TOOLS,
+                        quantity=tools_forged,
+                        description=f"Blacksmith {v.name} forged {tools_forged:.1f} iron tools at the Smithy anvil.",
+                    )
+                )
+
+            elif v_act == VillageActionType.BREW_HEALING_BROTH:
+                broth_qty = 1.5
+                inv = inv.with_delta(CommodityType.HEALING_BROTH, broth_qty)
+                energy = max(0.0, energy - 1.5)
+                coins = round(coins + 1.6, 4)
+                # Heal the most injured or fatigued villager
+                healed_target: str | None = None
+                for o_id, o_v in updated_villagers.items():
+                    if o_v.is_alive and (o_v.health < 90.0 or o_v.hunger < 50.0):
+                        updated_villagers[o_id] = o_v.model_copy(
+                            update={
+                                "health": min(100.0, round(o_v.health + 18.0, 4)),
+                                "hunger": min(100.0, round(o_v.hunger + 16.0, 4)),
+                            }
+                        )
+                        healed_target = o_id
+                        break
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        target_id=healed_target,
+                        action_type=v_act,
+                        category="coop",
+                        commodity=CommodityType.HEALING_BROTH,
+                        quantity=broth_qty,
+                        description=f"Herbalist {v.name} brewed medicinal healing broth from forest herbs.",
+                    )
+                )
+
+            elif v_act in (VillageActionType.PRESIDE_SABHA, VillageActionType.ATTEND_SABHA):
+                _, witnesses = self.compute_detection_probability(aid, pos, v_act)
+                coins = round(coins + (1.2 if v_act == VillageActionType.PRESIDE_SABHA else 0.4), 4)
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        quantity=1.0,
+                        witness_ids=tuple(witnesses),
+                        description=(
+                            f"Magistrate {v.name} presided over the Gram Sabha Town Assembly."
+                            if v_act == VillageActionType.PRESIDE_SABHA
+                            else f"{v.name} attended the Gram Sabha council circle at Town Square."
+                        ),
+                    )
+                )
+
+            elif v_act == VillageActionType.SING_BALLAD:
+                _, witnesses = self.compute_detection_probability(aid, pos, v_act)
+                coins = round(coins + 1.5, 4)
+                energy = min(v.max_energy, energy + 6.0)
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        quantity=1.0,
+                        witness_ids=tuple(witnesses),
+                        description=f"Bard {v.name} performed a lute ballad chronicling village deeds.",
+                    )
+                )
+
+            elif v_act == VillageActionType.INVESTIGATE_CRIME:
+                coins = round(coins + 1.8, 4)
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        quantity=1.0,
+                        description=f"Guard {v.name} inspected forensic footprints and interviewed witnesses.",
+                    )
+                )
+
+            elif v_act == VillageActionType.COMMUNITY_SERVICE:
+                _, witnesses = self.compute_detection_probability(aid, pos, v_act)
+                contrib = 1.5
+                self.granary = self.granary.model_copy(
+                    update={"storage": self.granary.storage.with_delta(CommodityType.WHEAT, contrib)}
+                )
+                tithes_tot = round(tithes_tot + contrib, 4)
+                energy = max(0.0, energy - 2.0)
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        commodity=CommodityType.WHEAT,
+                        quantity=contrib,
+                        witness_ids=tuple(witnesses),
+                        description=f"{v.name} performed public community service, restoring {contrib:.1f} grain to the Commons.",
+                    )
+                )
+
+            elif v_act == VillageActionType.COURTSHIP_BOND:
+                _, witnesses = self.compute_detection_probability(aid, pos, v_act)
+                energy = min(v.max_energy, energy + 5.0)
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        quantity=1.0,
+                        witness_ids=tuple(witnesses),
+                        description=f"{v.name} shared courtship gifts and strengthened household kinship.",
+                    )
+                )
+
+            elif v_act == VillageActionType.MOURN_AT_CHAPEL:
+                energy = min(v.max_energy, energy + 8.0)
+                self.step_outcomes.append(
+                    VillageInteractionOutcome(
+                        step=self.step_count,
+                        actor_id=aid,
+                        action_type=v_act,
+                        category="coop",
+                        quantity=1.0,
+                        description=f"{v.name} lit a memorial candle at St. Aurelia Chapel.",
+                    )
+                )
 
             elif v_act == VillageActionType.FORAGE_FOREST:
                 roll = float(self._forage_rng.uniform(1.2, 2.8))
@@ -1335,12 +1597,78 @@ class VillageWorld:
                         )
                     )
 
+                elif v_act == VillageActionType.SABOTAGE_GRANARY:
+                    avail = self.granary.storage.get(CommodityType.WHEAT)
+                    spoiled = min(3.0, avail)
+                    if caught:
+                        crimes_det += 1
+                        fine = min(coins, self.config.crime_coin_penalty * 1.2)
+                        coins = round(coins - fine, 4)
+                        pillory = self.config.pillory_sentence_ticks + 1
+                        self.step_outcomes.append(
+                            VillageInteractionOutcome(
+                                step=self.step_count,
+                                actor_id=aid,
+                                action_type=v_act,
+                                category="crime_caught",
+                                commodity=CommodityType.WHEAT,
+                                quantity=spoiled,
+                                witness_ids=tuple(witnesses),
+                                detection_probability=p_detect,
+                                detected=True,
+                                coin_penalty=fine,
+                                description=f"{v.name} was CAUGHT attempting to sabotage the Granary stores!",
+                            )
+                        )
+                    else:
+                        if spoiled > 0.0:
+                            self.granary = self.granary.model_copy(
+                                update={"storage": self.granary.storage.with_delta(CommodityType.WHEAT, -spoiled)}
+                            )
+                        self.step_outcomes.append(
+                            VillageInteractionOutcome(
+                                step=self.step_count,
+                                actor_id=aid,
+                                action_type=v_act,
+                                category="crime_unseen",
+                                commodity=CommodityType.WHEAT,
+                                quantity=spoiled,
+                                witness_ids=tuple(witnesses),
+                                detection_probability=p_detect,
+                                detected=False,
+                                description=f"{v.name} covertly sabotaged {spoiled:.1f} wheat in the Granary.",
+                            )
+                        )
+
+                elif v_act == VillageActionType.OFFER_BRIBE:
+                    bribe_amt = min(6.0, coins)
+                    coins = round(max(0.0, coins - bribe_amt), 4)
+                    if caught:
+                        crimes_det += 1
+                    self.step_outcomes.append(
+                        VillageInteractionOutcome(
+                            step=self.step_count,
+                            actor_id=aid,
+                            action_type=v_act,
+                            category="crime_caught" if caught else "defect",
+                            quantity=bribe_amt,
+                            witness_ids=tuple(witnesses),
+                            detection_probability=p_detect,
+                            detected=caught,
+                            coin_penalty=bribe_amt,
+                            description=f"{v.name} attempted to bribe a watch guard with {bribe_amt:.1f} coins.",
+                        )
+                    )
+
             # Survival health check
             health = v.health
+            starv_streak = v.starvation_streak
             if hunger <= 1.0 or hydration <= 1.0:
                 health = max(0.0, health - 8.0)
+                starv_streak += 1
             else:
                 health = min(100.0, health + 1.0)
+                starv_streak = 0
             alive = health > 0.0
 
             updated_villagers[aid] = v.model_copy(
@@ -1348,11 +1676,12 @@ class VillageWorld:
                     "position": pos,
                     "hunger": round(hunger, 4),
                     "hydration": round(hydration, 4),
-                    "energy": round(energy, 4),
+                    "energy": round(min(v.max_energy, energy), 4),
                     "health": round(health, 4),
                     "coins": round(coins, 4),
                     "inventory": inv,
                     "is_alive": alive,
+                    "starvation_streak": starv_streak,
                     "in_pillory_ticks": pillory,
                     "crimes_committed": crimes_comm,
                     "crimes_detected": crimes_det,
@@ -1477,6 +1806,31 @@ class VillageWorld:
             },
         )
 
+    def update_affective_and_lifecycle_states(
+        self,
+        pad_states: dict[str, tuple[str, tuple[float, float, float]]],
+        lifecycle_updates: dict[str, tuple[int, float, str, int]],
+    ) -> None:
+        """Synchronizes affective PAD emotions and demographic lifecycle state onto villagers."""
+        updated: dict[str, VillagerPhysicalState] = {}
+        for aid, v in self.villagers.items():
+            patch: dict[str, Any] = {}
+            if aid in pad_states:
+                dom_emotion, pad_vec = pad_states[aid]
+                patch["dominant_emotion"] = dom_emotion
+                patch["pad_vector"] = pad_vec
+            if aid in lifecycle_updates:
+                age_t, max_e, l_stage, gen = lifecycle_updates[aid]
+                patch["age_ticks"] = age_t
+                patch["max_energy"] = max_e
+                patch["life_stage"] = l_stage
+                patch["generation"] = gen
+                if v.energy > max_e:
+                    patch["energy"] = round(max_e, 4)
+            updated[aid] = v.model_copy(update=patch) if patch else v
+        self.villagers = updated
+        self._world_state = self._build_world_state()
+
     def grid_to_3d_coords(self, pos: Position) -> tuple[float, float]:
         """Maps discrete $(x, y)$ village grid coordinates to 3D Cinematic scene $(X, Z)$."""
         zone = self.get_zone_at(pos)
@@ -1514,6 +1868,7 @@ class VillageWorld:
                     "agent_id": v.agent_id,
                     "name": v.name,
                     "role": v.role.value,
+                    "archetype_title": v.archetype_title,
                     "grid_pos": [v.position.x, v.position.y],
                     "pos_3d": list(self.grid_to_3d_coords(v.position)),
                     "home": list(self.huts[v.home_hut_id].world_3d_coords)
@@ -1522,11 +1877,17 @@ class VillageWorld:
                     "hunger": round(v.hunger, 2),
                     "thirst": round(v.hydration, 2),
                     "energy": round(v.energy, 2),
+                    "max_energy": round(v.max_energy, 2),
                     "status": round(v.societal_status * 100.0, 2),
                     "societal_status": round(v.societal_status, 4),
                     "coins": round(v.coins, 2),
                     "inventory": v.inventory.to_plain_dict(),
                     "last_action": v.last_action.value,
+                    "age_ticks": v.age_ticks,
+                    "generation": v.generation,
+                    "life_stage": v.life_stage,
+                    "dominant_emotion": v.dominant_emotion,
+                    "pad_vector": list(v.pad_vector),
                 }
                 for v in self.villagers.values()
             ],

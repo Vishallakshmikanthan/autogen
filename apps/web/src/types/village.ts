@@ -44,18 +44,29 @@ export interface VillagerCardDTO {
   agent_id: string;
   name: string;
   role: string;
+  archetype_title?: string;
   position: { x: number; y: number };
   pos_3d: [number, number];
   home_3d: [number, number];
   hunger: number;
   hydration: number;
   energy: number;
+  max_energy?: number;
   health: number;
   coins: number;
   inventory: Record<string, number>;
   secret_chest_inventory: Record<string, number>;
   societal_status: number;
   status_pct: number;
+  age_ticks?: number;
+  generation?: number;
+  life_stage?: string;
+  dominant_emotion?: string;
+  pad_vector?: [number, number, number];
+  movement_speed_multiplier?: number;
+  aura_color_hex?: string;
+  parent_ids?: string[];
+  spouse_id?: string | null;
   in_pillory_ticks: number;
   crimes_committed: number;
   crimes_detected: number;
@@ -133,6 +144,24 @@ export interface VillageStatePayloadDTO {
   villagers: VillagerCardDTO[];
   social_graph: SocialGraphPayloadDTO;
   dialogue_events: VillageDialogueEventDTO[];
+  institutions?: {
+    sabha_active: boolean;
+    sabha_ticks_remaining: number;
+    active_sabha: Record<string, unknown> | null;
+    assembly_history: Array<Record<string, unknown>>;
+    enacted_policies: string[];
+    mandatory_tithe_rate: number;
+  };
+  demographics?: {
+    lineages: Record<string, Record<string, unknown>>;
+    partnerships: Array<Record<string, unknown>>;
+    child_births: Array<Record<string, unknown>>;
+    funerals: Array<Record<string, unknown>>;
+  };
+  justice?: {
+    forensic_traces: Array<Record<string, unknown>>;
+    redemption_records: Record<string, Record<string, unknown>>;
+  };
   step_outcomes: Array<{
     step: number;
     actor_id: string;

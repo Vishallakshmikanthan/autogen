@@ -143,6 +143,66 @@ class VillageTrustGraph:
         i = self._id_to_idx[target_id]
         self._matrix[j, i] = float(np.clip(value, 0.0, 1.0))
 
+    def add_agent(
+        self,
+        new_agent_id: str,
+        parent_ids: tuple[str, ...] = (),
+        inherited_trust: float | None = None,
+    ) -> dict[str, float]:
+        """Dynamically expands the trust matrix $\\mathbf{T}(t)$ when a child villager is born (§3.2).
+
+        The new villager inherits a blend of parental trust scores and neutral baseline trust.
+        """
+        if new_agent_id in self._id_to_idx:
+            return self.get_status_map()
+
+        old_ids = self.agent_ids
+        old_idx = self._id_to_idx
+        old_mat = self._matrix
+
+        new_ids = tuple(sorted((*old_ids, new_agent_id)))
+        new_idx = {aid: k for k, aid in enumerate(new_ids)}
+        n_new = len(new_ids)
+        base_t = (
+            float(np.clip(inherited_trust, 0.1, 0.9))
+            if inherited_trust is not None
+            else self.config.initial_trust
+        )
+
+        new_mat = np.full((n_new, n_new), base_t, dtype=np.float64)
+        np.fill_diagonal(new_mat, 0.0)
+
+        for src in old_ids:
+            for dst in old_ids:
+                if src == dst:
+                    continue
+                new_mat[new_idx[src], new_idx[dst]] = old_mat[old_idx[src], old_idx[dst]]
+
+        # Blend parental trust edges for the newborn villager
+        valid_parents = [p for p in parent_ids if p in old_idx]
+        if valid_parents:
+            c_idx = new_idx[new_agent_id]
+            for other in old_ids:
+                o_idx = new_idx[other]
+                if other in valid_parents:
+                    new_mat[o_idx, c_idx] = 0.85
+                    new_mat[c_idx, o_idx] = 0.90
+                else:
+                    avg_in = float(
+                        np.mean([old_mat[old_idx[other], old_idx[p]] for p in valid_parents])
+                    )
+                    avg_out = float(
+                        np.mean([old_mat[old_idx[p], old_idx[other]] for p in valid_parents])
+                    )
+                    new_mat[o_idx, c_idx] = float(np.clip(0.6 * avg_in + 0.4 * base_t, 0.0, 1.0))
+                    new_mat[c_idx, o_idx] = float(np.clip(0.6 * avg_out + 0.4 * base_t, 0.0, 1.0))
+
+        self.agent_ids = new_ids
+        self._id_to_idx = new_idx
+        self._matrix = new_mat
+        self._status = np.full(n_new, 1.0 / n_new, dtype=np.float64)
+        return self.compute_societal_status()
+
     def record_interaction(
         self,
         observer_id: str,
@@ -172,6 +232,14 @@ class VillageTrustGraph:
         t_clamped = float(np.clip(t_next, 0.0, 1.0))
         self._matrix[j, i] = t_clamped
         return t_clamped
+
+    def record_direct_experience(
+        self, observer_id: str, target_id: str, is_cooperative: bool
+    ) -> float:
+        """Records direct experience between two villagers."""
+        return self.record_interaction(
+            observer_id, target_id, "coop" if is_cooperative else "defect"
+        )
 
     def record_public_event(
         self,

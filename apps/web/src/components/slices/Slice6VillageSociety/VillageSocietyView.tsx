@@ -847,6 +847,51 @@ export const VillageSocietyView: React.FC<VillageSocietyViewProps> = ({
           </button>
 
           <button
+            onClick={async () => {
+              send3DCmd('CONVOKE_SABHA_3D');
+              send3DCmd('PLAY_SOUND', { sound: 'bell' });
+              try {
+                const res = await fetch('/api/v1/village/sabha', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ emergency_reason: 'Emergency Grain Tithe & Pillory Sanctions' }),
+                });
+                const envelope = await res.json();
+                if (envelope?.data) setState(envelope.data);
+              } catch {
+                handleStep(1);
+              }
+            }}
+            title="Summons Town Assembly bell and council circle at Town Square"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 border border-amber-300/50 shadow-[0_0_14px_rgba(245,158,11,0.35)] transition-all"
+          >
+            <span>🔔</span>
+            <span>Convoke Sabha</span>
+          </button>
+
+          <button
+            onClick={async () => {
+              send3DCmd('PLAY_SOUND', { sound: 'lute' });
+              try {
+                const res = await fetch('/api/v1/village/lineage', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ parent_a_id: 'villager_arun', parent_b_id: 'villager_meera' }),
+                });
+                const envelope = await res.json();
+                if (envelope?.data) setState(envelope.data);
+              } catch {
+                handleStep(1);
+              }
+            }}
+            title="Form household partnership and spawn next-generation child villager"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-300/50 shadow-[0_0_14px_rgba(16,185,129,0.35)] transition-all"
+          >
+            <span>👶</span>
+            <span>Next Generation</span>
+          </button>
+
+          <button
             onClick={handleRunExperiments}
             disabled={runningExperiments}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_16px_rgba(34,211,238,0.25)] transition-all"

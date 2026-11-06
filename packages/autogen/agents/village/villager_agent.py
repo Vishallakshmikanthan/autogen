@@ -10,6 +10,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from autogen.agents.base.contracts import AgentCapabilities, BaseAgent
 from autogen.core.types import DecisionTrace
+from autogen.intelligence.village.affective_pad import (
+    AffectivePADEngine,
+    AffectiveStateVector,
+    EmotionCategory,
+)
 from autogen.intelligence.village.utility_ethics import (
     ActionUtilityEvaluation,
     UtilityEngine,
@@ -21,6 +26,7 @@ from autogen.simulation.environment.village.commodities import (
     CommodityType,
 )
 from autogen.simulation.environment.village.village_grid import (
+    CANONICAL_ARCHETYPES,
     VillageActionType,
     VillageObservation,
     VillageRole,
@@ -66,7 +72,12 @@ class VillagerAgent(BaseAgent):
         super().__init__(agent_id=agent_id, capabilities=caps)
         self.name = name or agent_id
         self.role = role
+        self.archetype_title = CANONICAL_ARCHETYPES.get(agent_id, f"{role.value} Specialist")
         self.utility_engine = UtilityEngine(weights=utility_weights)
+        self.affective_engine = AffectivePADEngine()
+        self.affective_state = AffectiveStateVector(agent_id=agent_id)
+        self.affective_state = AffectiveStateVector()
+        self.sabha_summoned: bool = False
         self._last_village_obs: VillageObservation | None = None
         self.belief_state = VillagerBeliefState()
         self.cumulative_reward: float = 0.0
@@ -119,6 +130,32 @@ class VillagerAgent(BaseAgent):
 
         # Estimate subjective detection probability from visible witnesses and ambient light
         est_det = self.estimate_subjective_detection_probability(v_obs)
+
+        # Appraise OCC affective stimuli and update continuous 3D PAD emotional state
+        witnessed_tuples = [
+            (out.category, out.actor_id, out.target_id, out.detected)
+            for out in v_obs.witnessed_outcomes
+        ]
+        max_vis_status = max(
+            (vv.societal_status for vv in v_obs.visible_villagers),
+            default=v_obs.societal_status,
+        )
+        stimuli = self.affective_engine.appraise_observation(
+            agent_id=self.agent_id,
+            hunger=v_obs.hunger,
+            hydration=v_obs.hydration,
+            energy=v_obs.energy,
+            coins=v_obs.coins,
+            societal_status=v_obs.societal_status,
+            in_pillory=(v_obs.in_pillory_ticks > 0),
+            witnessed_categories=witnessed_tuples,
+            max_visible_peer_status=max_vis_status,
+        )
+        self.affective_state = self.affective_engine.step_pad_state(
+            current=self.affective_state,
+            stimuli=stimuli,
+            step=v_obs.step,
+        )
 
         self.belief_state = VillagerBeliefState(
             believed_prices=new_prices,
@@ -380,6 +417,191 @@ class VillagerAgent(BaseAgent):
                     rationale_note="Guard the Granary Commons and Town Square.",
                 )
             )
+            if self.agent_id == "villager_dev" or len(self.belief_state.known_offenders) > 0:
+                candidates.append(
+                    self.utility_engine.evaluate_action(
+                        action_type=VillageActionType.INVESTIGATE_CRIME,
+                        current_hunger=h,
+                        current_hydration=t,
+                        current_energy=e,
+                        current_coins=c,
+                        current_inventory=inv,
+                        clearing_prices=prices,
+                        current_status=s,
+                        projected_hunger=h,
+                        projected_hydration=t,
+                        projected_energy=max(0.0, e - 1.0),
+                        projected_coins=c + 3.8,
+                        projected_inventory=inv,
+                        projected_status=min(1.0, s + 0.055),
+                        distance_cost=dist_to("village_commons") * 0.05,
+                        target_zone="village_commons",
+                        rationale_note="Inspect forensic evidence and interview eyewitnesses.",
+                    )
+                )
+
+        # 8b. Specialized Guild & Institutional Pathways (§4 & §5)
+        if self.sabha_summoned and h > 30.0 and t > 30.0:
+            is_magistrate = self.agent_id == "villager_lata" or self.role == VillageRole.MAGISTRATE
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.PRESIDE_SABHA if is_magistrate else VillageActionType.ATTEND_SABHA,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=h,
+                    projected_hydration=t,
+                    projected_energy=e,
+                    projected_coins=c + (3.5 if is_magistrate else 1.5),
+                    projected_inventory=inv,
+                    projected_status=min(1.0, s + (0.095 if is_magistrate else 0.065)),
+                    distance_cost=dist_to("town_well") * 0.03,
+                    target_zone="town_well",
+                    rationale_note="Answer the Town Hall bell to deliberate in the Gram Sabha assembly.",
+                )
+            )
+
+        if (self.agent_id == "villager_meera" or self.role == VillageRole.MILLER) and h > 40.0 and t > 40.0:
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.MILL_WHEAT,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=min(100.0, h + 18.0),
+                    projected_hydration=t,
+                    projected_energy=max(0.0, e - 1.5),
+                    projected_coins=c + 4.2,
+                    projected_inventory=inv.with_delta(CommodityType.BREAD, 1.8),
+                    projected_status=min(1.0, s + 0.048),
+                    distance_cost=dist_to("windmill") * 0.06,
+                    target_zone="windmill",
+                    rationale_note="Mill raw wheat at the Old Windmill into flour and baked bread.",
+                )
+            )
+
+        if (self.agent_id == "villager_ravi" or self.role == VillageRole.BLACKSMITH) and h > 40.0 and t > 40.0:
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.FORGE_TOOLS,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=h,
+                    projected_hydration=t,
+                    projected_energy=max(0.0, e - 1.8),
+                    projected_coins=c + 4.8,
+                    projected_inventory=inv.with_delta(CommodityType.TOOLS, 1.5),
+                    projected_status=min(1.0, s + 0.052),
+                    distance_cost=dist_to("smithy") * 0.06,
+                    target_zone="smithy",
+                    rationale_note="Forge iron agricultural tools at the Blacksmith anvil.",
+                )
+            )
+
+        if (self.agent_id == "villager_imran" or self.role == VillageRole.HERBALIST) and h > 40.0 and t > 40.0:
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.BREW_HEALING_BROTH,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=min(100.0, h + 12.0),
+                    projected_hydration=min(100.0, t + 12.0),
+                    projected_energy=max(0.0, e - 1.2),
+                    projected_coins=c + 3.8,
+                    projected_inventory=inv.with_delta(CommodityType.HEALING_BROTH, 1.5),
+                    projected_status=min(1.0, s + 0.050),
+                    distance_cost=dist_to("tavern") * 0.06,
+                    target_zone="tavern",
+                    rationale_note="Brew medicinal herb broth to restore village health.",
+                )
+            )
+
+        if (self.agent_id == "villager_nila" or self.role == VillageRole.BARD) and h > 45.0 and t > 45.0:
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.SING_BALLAD,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=h,
+                    projected_hydration=t,
+                    projected_energy=min(100.0, e + 6.0),
+                    projected_coins=c + 3.6,
+                    projected_inventory=inv,
+                    projected_status=min(1.0, s + 0.055),
+                    distance_cost=dist_to("tavern") * 0.05,
+                    target_zone="tavern",
+                    rationale_note="Perform a lute ballad at the Golden Hearth Tavern to uplift morale.",
+                )
+            )
+
+        if self.affective_state.dominant_emotion == EmotionCategory.GUILT or (s < 0.065 and h > 45.0):
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.COMMUNITY_SERVICE,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=h,
+                    projected_hydration=t,
+                    projected_energy=max(0.0, e - 1.5),
+                    projected_coins=c,
+                    projected_inventory=inv,
+                    projected_status=min(1.0, s + 0.085),
+                    distance_cost=dist_to("village_commons") * 0.05,
+                    target_zone="village_commons",
+                    rationale_note="Perform public community service to rehabilitate tarnished reputation.",
+                )
+            )
+
+        if self.affective_state.dominant_emotion == EmotionCategory.GRIEF and h > 35.0:
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.MOURN_AT_CHAPEL,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=h,
+                    projected_hydration=t,
+                    projected_energy=min(100.0, e + 10.0),
+                    projected_coins=c,
+                    projected_inventory=inv,
+                    projected_status=min(1.0, s + 0.040),
+                    distance_cost=dist_to("chapel") * 0.05,
+                    target_zone="chapel",
+                    rationale_note="Mourn at St. Aurelia Chapel to find solace from grief.",
+                )
+            )
 
         # ======================================================================
         # UNETHICAL / CRIMINAL PATHWAYS (§2.3: Evaluated via Risk-Reward Utility)
@@ -519,6 +741,8 @@ class VillagerAgent(BaseAgent):
             "detection_probability": best.detection_probability,
             "expected_risk_penalty": best.expected_risk_penalty,
             "best_unethical_utility": best_unethical_u,
+            "dominant_emotion": self.affective_state.dominant_emotion.value,
+            "pad_vector": list(self.affective_state.to_vector()),
             "rationale_note": best.rationale_note,
             "top_candidates": [
                 {
@@ -541,6 +765,9 @@ class VillagerAgent(BaseAgent):
                 "expected_utility": best.expected_total_utility,
                 "detection_risk": best.detection_probability,
                 "societal_status": round(v_obs.societal_status, 4),
+                "pad_valence": round(self.affective_state.valence, 4),
+                "pad_arousal": round(self.affective_state.arousal, 4),
+                "pad_dominance": round(self.affective_state.dominance, 4),
                 "runtime_ns": elapsed_ns,
             },
             rationale=rationale,
@@ -574,6 +801,9 @@ class VillagerAgent(BaseAgent):
         super().reset()
         self._last_village_obs = None
         self.belief_state = VillagerBeliefState()
+        self.affective_state = AffectiveStateVector(agent_id=self.agent_id)
+        self.affective_state = AffectiveStateVector()
+        self.sabha_summoned = False
         self.cumulative_reward = 0.0
         self.last_trace = None
         self.last_evaluations = []

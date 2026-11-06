@@ -30,15 +30,15 @@ body.embedded #hud,body.embedded #info,body.embedded #tip{display:none!important
 </div>
 <div id="info" class="p"></div>
 <div id="tip">Drag to orbit · scroll to zoom · right-drag to pan · click a villager</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="/vendor/three/three.min.js"></script>
+<script src="/vendor/three/OrbitControls.js"></script>
+<script src="/vendor/three/CopyShader.js"></script>
+<script src="/vendor/three/LuminosityHighPassShader.js"></script>
+<script src="/vendor/three/FXAAShader.js"></script>
+<script src="/vendor/three/EffectComposer.js"></script>
+<script src="/vendor/three/RenderPass.js"></script>
+<script src="/vendor/three/ShaderPass.js"></script>
+<script src="/vendor/three/UnrealBloomPass.js"></script>
 <script>
 const T=THREE,G=.3,rnd=Math.random;
 const sm=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
@@ -59,7 +59,23 @@ const scene=new T.Scene(),cam=new T.PerspectiveCamera(55,innerWidth/innerHeight,
 const ren=new T.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.setSize(innerWidth,innerHeight);
 ren.shadowMap.enabled=true;ren.shadowMap.type=T.PCFSoftShadowMap;document.body.appendChild(ren.domElement);
 scene.fog=new T.Fog(0x86c5ee,120,620);scene.background=new T.Color(0x86c5ee);
-const ctl=new T.OrbitControls(cam,ren.domElement);ctl.enableDamping=true;ctl.maxPolarAngle=1.5;ctl.minDistance=6;ctl.maxDistance=420;
+let ctl;
+if (typeof T.OrbitControls === 'function') {
+  ctl = new T.OrbitControls(cam, ren.domElement);
+  ctl.enableDamping = true;
+  ctl.maxPolarAngle = 1.5;
+  ctl.minDistance = 6;
+  ctl.maxDistance = 420;
+} else {
+  ctl = {
+    target: new T.Vector3(0, 2, 0),
+    update: () => {},
+    enableDamping: false,
+    maxPolarAngle: 1.5,
+    minDistance: 6,
+    maxDistance: 420
+  };
+}
 cam.position.set(110,70,140);ctl.target.set(0,2,0);
 const hemi=new T.HemisphereLight(0xcfe8ff,0x4a5a2f,.6),sun=new T.DirectionalLight(0xfff4e0,1.1);scene.add(hemi,sun,sun.target);
 sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);Object.assign(sun.shadow.camera,{left:-130,right:130,top:130,bottom:-130,near:10,far:700});
@@ -488,8 +504,52 @@ const labs=[['Town Square',0,7,0],['The Well',0,8.5,0],['Market',0,9,31],['Grana
 const ring=(a)=>[Math.cos(a)*21,Math.sin(a)*21];
 const TG={well:[0,4],square:[5,-4],market:[0,31],granary:granaryDoor,farm0:[-30,-47],farm1:[0,-51],farm2:[30,-47],windmill:door(WM.x,WM.z,wmA,8),bank:[rxf(-10)-12,-10],bridgeW:[RX-17,5],bridgeE:[RX+17,5],forest:[-88,14]};
 const NAMES=['Arun','Meera','Ravi','Kavya','Imran','Lata','Bheem','Tara','Dev','Nila'],ROLES=['Farmer','Farmer','Farmer','Water-Carrier','Water-Carrier','Merchant','Merchant','Guard','Guard','Wanderer'];
+const ARCHETYPES={
+ Arun:'Master Farmer',Meera:'Grain Miller',Ravi:'Blacksmith',
+ Kavya:'Well Keeper',Imran:'Herbalist',Lata:'Village Magistrate',
+ Bheem:'Merchant',Tara:'Captain of the Watch',Dev:'Town Guard',Nila:'Wandering Bard'
+};
 const RC={Farmer:0x6aa84f,'Water-Carrier':0x4a90d9,Merchant:0xd9534f,Guard:0x6b7280,Wanderer:0xb07acb};
 const SCH={Farmer:['farm0','farm1','farm2','granary','windmill','home'],'Water-Carrier':['well','home','square','bank','well','market'],Merchant:['market','square','granary','market','home'],Guard:['square','bridgeW','bridgeE','granary','farm1','square'],Wanderer:['bank','windmill','square','market','forest','bridgeE']};
+
+/* Procedural Medieval Soundscape Web Audio API (§7.5) */
+const MedievalAudio=(()=>{
+ let ctx=null,master=null,enabled=true;
+ const init=()=>{
+  if(ctx)return;
+  try{
+   ctx=new(window.AudioContext||window.webkitAudioContext)();
+   master=ctx.createGain();master.gain.value=0.18;master.connect(ctx.destination);
+  }catch(e){}
+ };
+ return {
+  init,
+  toggle:(v)=>{enabled=v!==undefined?v:!enabled;return enabled;},
+  bell:()=>{
+   if(!enabled)return;init();if(!ctx)return;
+   const t=ctx.currentTime,osc=ctx.createOscillator(),g=ctx.createGain();
+   osc.type='sine';osc.frequency.setValueAtTime(330,t);osc.frequency.exponentialRampToValueAtTime(110,t+2.4);
+   g.gain.setValueAtTime(0.8,t);g.gain.exponentialRampToValueAtTime(0.001,t+2.4);
+   osc.connect(g);g.connect(master);osc.start(t);osc.stop(t+2.4);
+  },
+  lute:()=>{
+   if(!enabled)return;init();if(!ctx)return;
+   [220,277.18,329.63,440].forEach((freq,i)=>{
+    const t=ctx.currentTime+i*0.06,osc=ctx.createOscillator(),g=ctx.createGain();
+    osc.type='triangle';osc.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(0.35,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.9);
+    osc.connect(g);g.connect(master);osc.start(t);osc.stop(t+0.9);
+   });
+  },
+  anvil:()=>{
+   if(!enabled)return;init();if(!ctx)return;
+   const t=ctx.currentTime,osc=ctx.createOscillator(),g=ctx.createGain();
+   osc.type='square';osc.frequency.setValueAtTime(880,t);osc.frequency.exponentialRampToValueAtTime(440,t+0.35);
+   g.gain.setValueAtTime(0.4,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.35);
+   osc.connect(g);g.connect(master);osc.start(t);osc.stop(t+0.35);
+  }
+ };
+})();
 function makeBubbleSprite(){
  const cv=document.createElement('canvas');cv.width=640;cv.height=118;
  const tex=new T.CanvasTexture(cv);
@@ -587,6 +647,25 @@ NAMES.forEach((n,i)=>{
  const mkLeg=s=>{const lg=new T.Group();lg.position.set(s*.15,1.05,0);g.add(lg);mk(B(.19,.98,.2),0x3b352e,0,-.49,0,lg);mk(B(.2,.12,.28),0x241911,0,-.98,.04,lg);return lg};
  const A=[mkArm(-1),mkArm(1)],Lg=[mkLeg(-1),mkLeg(1)];
  if(role=='Farmer'){mk(Cy(.44,.44,.05,12),0xd8c27a,0,1.16,0,bp);mk(Cy(.2,.22,.16,10),0xc8b060,0,1.24,0,bp);mk(Cy(.025,.025,1.3,6),0x6a4a2a,0,-.58,.5,A[1]).rotation.x=Math.PI/2}
+ const arch=ARCHETYPES[n]||role;
+ if(arch==='Grain Miller'||n==='Meera'){
+  mk(Cy(.26,.26,.08,12),0xf5f5f5,0,1.18,0,bp);
+  mk(B(.38,.5,.3),0xede8dc,.3,.88,-.05,bp);
+ }else if(arch==='Blacksmith'||n==='Ravi'){
+  mk(B(.58,.68,.04),0x4a2e18,0,.32,.18,bp);
+  mk(Cy(.03,.03,.6,6),0x5c4033,0,-.4,.3,A[1]);
+  mk(B(.18,.12,.12),0x2d3748,0,-.62,.3,A[1]);
+ }else if(arch==='Village Magistrate'||n==='Lata'){
+  mk(B(.66,.76,.38),0x581c87,0,.36,0,bp);
+  mk(Cy(.025,.025,1.8,6),0xd97706,0,.1,0,A[1]);
+ }else if(arch==='Herbalist'||n==='Imran'){
+  mk(B(.24,.28,.16),0x047857,-.32,.32,.12,bp);
+  mk(Cy(.08,.06,.2,8),0x10b981,0,-.6,.2,A[1]);
+ }else if(arch==='Wandering Bard'||n==='Nila'){
+  mk(new T.ConeGeometry(.28,.65,8),0x7c3aed,0,1.28,0,bp);
+  mk(Sp(.22,10),0xd97706,.15,.4,.28,bp);
+  mk(B(.08,.6,.04),0x78350f,.25,.7,.32,bp);
+ }else if(role=='Farmer'){mk(Cy(.44,.44,.05,12),0xd8c27a,0,1.16,0,bp);mk(Cy(.2,.22,.16,10),0xc8b060,0,1.24,0,bp);mk(Cy(.025,.025,1.3,6),0x6a4a2a,0,-.58,.5,A[1]).rotation.x=Math.PI/2}
  else if(role=='Guard'){mk(Cy(.24,.28,.26,10),0x888b93,0,1.14,0,bp);mk(Cy(.03,.03,2.4,6),0x5b3a22,0,-.1,0,A[1]);mk(B(.06,.55,.42),0x3a5a9a,-.1,-.3,.1,A[0])}
  else if(role=='Merchant'){mk(B(.58,.54,.03),0xf5ebd6,0,.32,.18,bp);mk(Sp(.24,8),0xb03030,0,1.12,0,bp)}
  else if(role=='Wanderer'){mk(new T.ConeGeometry(.28,.65,8),0x6a3a9a,0,1.28,0,bp)}
@@ -716,11 +795,28 @@ function stepAgents(dt){
    else{A[0].rotation.x=A[1].rotation.x=Math.sin(now*1.6+idx)*.06}
   }
 
-  // Aura Ring Color & Glow
-  const isCrime=a.inPillory||(a.action&&(a.action.includes('STEAL')||a.action==='HOARD_AND_GOUGE'));
-  const isCoop=a.action==='TITHE_GRANARY'||a.action==='MARKET_TRADE';
+  // Aura Ring Color & Glow grounded in Affective 3D PAD Emotional States (§2 & §7)
+  const isCrime=a.inPillory||(a.action&&(a.action.includes('STEAL')||a.action==='HOARD_AND_GOUGE'||a.action==='SABOTAGE_GRANARY'));
+  const isCoop=a.action==='TITHE_GRANARY'||a.action==='MARKET_TRADE'||a.action==='COMMUNITY_SERVICE';
   const inConvo=dist<4.8;
   a.auraMat.color.setHex(isCrime?0xef4444:inConvo?(isSpeaker?0x38bdf8:0x34d399):isCoop?0x34d399:0xe9b44c);
+  const domEm=a.dominantEmotion||'Calm / Composed';
+
+  if(a.auraColorHex){
+   a.auraMat.color.set(a.auraColorHex);
+  }else if(isCrime||domEm.includes('Malice')||domEm.includes('Jealousy')){
+   a.auraMat.color.setHex(0xef4444);
+  }else if(domEm.includes('Joy')||isCoop){
+   a.auraMat.color.setHex(0x10b981);
+  }else if(domEm.includes('Grief')||domEm.includes('Guilt')){
+   a.auraMat.color.setHex(0x3b82f6);
+  }else if(domEm.includes('Righteous')||a.role==='Guard'){
+   a.auraMat.color.setHex(0xf59e0b);
+  }else if(inConvo){
+   a.auraMat.color.setHex(isSpeaker?0x38bdf8:0x34d399);
+  }else{
+   a.auraMat.color.setHex(0xe9b44c);
+  }
   a.auraMat.opacity=isCrime?(.55+.35*Math.sin(now*8)):inConvo?(.6+.25*Math.sin(now*4)):.4;
 
   const yBase=gy(a.x,a.z);
@@ -737,7 +833,7 @@ const hl=new T.Mesh(new T.TorusGeometry(.9,.08,6,24).rotateX(Math.PI/2),new T.Me
 let sel=null,follow=false;const info=document.getElementById('info'),bar=v=>`<div class=bar><i style="width:${Math.max(0,Math.min(100,v))}%"></i></div>`;
 function showInfo(){if(!sel){info.style.display='none';hl.visible=false;return}info.style.display='block';hl.visible=true;hl.position.set(sel.x,sel.g.position.y+.1,sel.z);
  info.innerHTML=`<h2>${sel.n}</h2><small>${sel.role} · heading to ${sel.goal.replace(/\d/,'')}</small><div class=row style="margin:8px 0 0">Hunger</div>${bar(sel.hunger)}Thirst${bar(sel.thirst)}Energy${bar(sel.energy)}Societal status <b>${sel.status.toFixed(1)}</b>${bar(sel.status)}<label><input id=fol type=checkbox ${follow?'checked':''}>Follow</label>`;
- const f=document.getElementById('fol');f.onchange=()=>follow=f.checked}
+ const f=document.getElementById('fol');if(f)f.onchange=()=>follow=f.checked}
 const ray=new T.Raycaster(),mv=new T.Vector2();let down=null;
 ren.domElement.addEventListener('pointerdown',e=>down=[e.clientX,e.clientY]);
 ren.domElement.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;mv.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mv,cam);
@@ -1040,6 +1136,25 @@ window.addEventListener('message',e=>{
    cam.position.copy(ctl.target).add(dir);
   }
   else if(d.cmd==='EXPORT_JSON'){document.getElementById('exp').click()}
+  else if(d.cmd==='PLAY_SOUND'&&d.sound){
+   if(d.sound==='bell')MedievalAudio.bell();
+   else if(d.sound==='lute')MedievalAudio.lute();
+   else if(d.sound==='anvil')MedievalAudio.anvil();
+  }
+  else if(d.cmd==='CONVOKE_SABHA_3D'){
+   MedievalAudio.bell();
+   // Route all living villagers to form a circular assembly at Town Square
+   const angleStep=(Math.PI*2)/agents.length;
+   agents.forEach((ag,idx)=>{
+    const ang=idx*angleStep;
+    const r=idx===0?1.5:5.5;
+    const tx=Math.cos(ang)*r;
+    const tz=Math.sin(ang)*r;
+    ag.path=[[tx,tz]];
+    ag.goal='square';
+    ag.wait=12;
+   });
+  }
   return;
  }
  if(e.data.type!=='AUTOGEN_VILLAGE_SYNC')return;
@@ -1053,6 +1168,9 @@ window.addEventListener('message',e=>{
    if(ag){
     ag.hunger=v.hunger;ag.thirst=v.hydration;ag.energy=v.energy;ag.status=v.status_pct||v.societal_status*100;
     ag.action=v.last_action||'IDLE';
+    ag.dominantEmotion=v.dominant_emotion||'Calm / Composed';
+    ag.auraColorHex=v.aura_color_hex||null;
+    ag.speedMultiplier=v.movement_speed_multiplier||1.0;
     const spEv=evs.find(d=>d.speaker_id===v.agent_id||String(d.speaker_name).toLowerCase()===ag.n.toLowerCase());
     ag.speech=v.last_utterance||(spEv?spEv.utterance:'')||(Array.isArray(v.episodic_memories)&&v.episodic_memories[0])||GREETINGS[ag.n]||'';
     ag.inPillory=(v.in_pillory_ticks||v.in_pillory||0)>0;

@@ -12,9 +12,14 @@ class CommodityType(str, Enum):
 
     WATER = "water"
     WHEAT = "wheat"
+    FLOUR = "flour"
+    BREAD = "bread"
     TIMBER = "timber"
+    IRON_ORE = "iron_ore"
     FISH = "fish"
     BERRIES = "berries"
+    HERBS = "herbs"
+    HEALING_BROTH = "healing_broth"
     TOOLS = "tools"
 
 
@@ -29,6 +34,7 @@ class CommoditySpec(BaseModel):
     nutrition_value: float = Field(ge=0.0, description="Hunger saturation restored per unit")
     hydration_value: float = Field(ge=0.0, description="Hydration restored per unit")
     energy_boost: float = Field(ge=0.0, description="Immediate energy restored per unit")
+    health_boost: float = Field(default=0.0, ge=0.0, description="Immediate health restored per unit")
 
 
 COMMODITY_CATALOG: dict[CommodityType, CommoditySpec] = {
@@ -48,9 +54,34 @@ COMMODITY_CATALOG: dict[CommodityType, CommoditySpec] = {
         hydration_value=0.0,
         energy_boost=8.0,
     ),
+    CommodityType.FLOUR: CommoditySpec(
+        commodity=CommodityType.FLOUR,
+        base_price=4.2,
+        decay_rate=0.003,
+        nutrition_value=34.0,
+        hydration_value=0.0,
+        energy_boost=10.0,
+    ),
+    CommodityType.BREAD: CommoditySpec(
+        commodity=CommodityType.BREAD,
+        base_price=5.5,
+        decay_rate=0.008,
+        nutrition_value=45.0,
+        hydration_value=4.0,
+        energy_boost=16.0,
+        health_boost=6.0,
+    ),
     CommodityType.TIMBER: CommoditySpec(
         commodity=CommodityType.TIMBER,
         base_price=4.0,
+        decay_rate=0.0,
+        nutrition_value=0.0,
+        hydration_value=0.0,
+        energy_boost=0.0,
+    ),
+    CommodityType.IRON_ORE: CommoditySpec(
+        commodity=CommodityType.IRON_ORE,
+        base_price=5.2,
         decay_rate=0.0,
         nutrition_value=0.0,
         hydration_value=0.0,
@@ -71,6 +102,24 @@ COMMODITY_CATALOG: dict[CommodityType, CommoditySpec] = {
         nutrition_value=20.0,
         hydration_value=10.0,
         energy_boost=6.0,
+    ),
+    CommodityType.HERBS: CommoditySpec(
+        commodity=CommodityType.HERBS,
+        base_price=3.8,
+        decay_rate=0.010,
+        nutrition_value=8.0,
+        hydration_value=5.0,
+        energy_boost=10.0,
+        health_boost=8.0,
+    ),
+    CommodityType.HEALING_BROTH: CommoditySpec(
+        commodity=CommodityType.HEALING_BROTH,
+        base_price=7.5,
+        decay_rate=0.012,
+        nutrition_value=25.0,
+        hydration_value=22.0,
+        energy_boost=28.0,
+        health_boost=24.0,
     ),
     CommodityType.TOOLS: CommoditySpec(
         commodity=CommodityType.TOOLS,
@@ -125,11 +174,14 @@ class CommodityInventory(BaseModel):
         return total
 
     def total_edible_units(self) -> float:
-        """Returns total units of food (wheat, fish, berries)."""
+        """Returns total units of food (wheat, flour, bread, fish, berries, healing broth)."""
         return (
             self.get(CommodityType.WHEAT)
+            + self.get(CommodityType.FLOUR)
+            + self.get(CommodityType.BREAD)
             + self.get(CommodityType.FISH)
             + self.get(CommodityType.BERRIES)
+            + self.get(CommodityType.HEALING_BROTH)
         )
 
     def to_plain_dict(self) -> dict[str, float]:

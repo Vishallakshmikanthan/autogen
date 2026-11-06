@@ -401,3 +401,174 @@ def test_empirical_scenarios_and_api_endpoints() -> None:
     assert r_export.status_code == 200
     assert r_export.json()["data"]["name"] == "village_world"
 
+    # Verify newly added Civilized Society API Endpoints: Gram Sabha & Lineage
+    r_sabha = client.post("/api/v1/village/sabha", json={"emergency_reason": "Civic Grain Audit"})
+    assert r_sabha.status_code == 200
+    assert r_sabha.json()["data"]["institutions"]["sabha_active"] is True
+
+    r_lineage = client.post(
+        "/api/v1/village/lineage",
+        json={"parent_a_id": "villager_arun", "parent_b_id": "villager_meera", "child_name": "TestKiran"},
+    )
+    assert r_lineage.status_code == 200
+    child_births = r_lineage.json()["data"]["demographics"]["child_births"]
+    assert any(b["child_name"] == "TestKiran" for b in child_births)
+
+
+def test_affective_pad_dynamics_and_transitions() -> None:
+    """Verifies P1: Affective continuous 3D PAD transitions, bounds, and emotional classification."""
+    from autogen.intelligence.village.affective_pad import (
+        AffectivePADEngine,
+        AffectiveStateVector,
+        AffectiveStimulus,
+        EmotionCategory,
+    )
+
+    engine = AffectivePADEngine()
+    initial = AffectiveStateVector(valence=0.0, arousal=0.0, dominance=0.0)
+
+    # Apply severe famine / crime distress stimulus
+    distress = [
+        AffectiveStimulus(stimulus_name="starvation", delta_v=-0.8, delta_a=-0.6, delta_d=-0.7, intensity=1.0)
+    ]
+    grief_state = engine.step_pad_state(initial, distress, step=1)
+    assert grief_state.dominant_emotion == EmotionCategory.GRIEF
+    assert grief_state.valence < 0.0
+    assert grief_state.movement_speed_multiplier <= 0.65
+    assert grief_state.aura_color_hex in ("#60a5fa", "#3b82f6")
+
+    # Stimulate joy / community feast
+    joy_stim = [
+        AffectiveStimulus(stimulus_name="communal_feast", delta_v=0.9, delta_a=0.5, delta_d=0.6, intensity=1.0)
+    ]
+    joy_state = engine.step_pad_state(initial, joy_stim, step=2)
+    assert joy_state.dominant_emotion == EmotionCategory.JOY
+    assert joy_state.movement_speed_multiplier >= 1.05
+    assert joy_state.aura_color_hex in ("#34d399", "#10b981")
+
+
+def test_demographics_lifecycle_and_genetic_inheritance() -> None:
+    """Verifies P2: Aging stamina decay, courtship partnership, and inherited traits."""
+    from autogen.intelligence.village.institutions_and_lineage import (
+        LifecycleConfig,
+        LifecycleEngine,
+        LineageRecord,
+    )
+
+    lc_engine = LifecycleEngine(
+        LifecycleConfig(elder_threshold_ticks=300, max_lifespan_span_ticks=200, seed=42)
+    )
+
+    # 1. Elder stamina decay invariant
+    e_youth = lc_engine.compute_max_energy(age_ticks=100)
+    e_elder = lc_engine.compute_max_energy(age_ticks=350)
+    assert e_youth == 100.0
+    assert e_elder < e_youth
+    assert e_elder >= 25.0
+
+    # 2. Genetic and cultural inheritance blending
+    lin_a = LineageRecord(agent_id="parent_a", name="ParentA", generation=1)
+    lin_b = LineageRecord(agent_id="parent_b", name="ParentB", generation=1)
+
+    birth_rec, child_lin = lc_engine.spawn_child_record(
+        step=50,
+        child_id="child_1",
+        child_name="ChildOne",
+        parent_a=lin_a,
+        parent_b=lin_b,
+        weights_a=(0.20, 16.0, 1.2),
+        weights_b=(0.40, 12.0, 1.6),
+    )
+    assert child_lin.generation == 2
+    assert "parent_a" in child_lin.parent_ids and "parent_b" in child_lin.parent_ids
+    # Inherited risk tolerance should be within bounds of parental average
+    parent_mean_risk = (0.20 + 0.40) / 2.0
+    assert abs(birth_rec.inherited_theta_risk - parent_mean_risk) < 0.15
+
+
+def test_gram_sabha_trust_weighted_consensus() -> None:
+    """Verifies P3: Gram Sabha Town Assembly deliberation, voting, and trust-weighted consensus."""
+    from autogen.intelligence.village.institutions_and_lineage import GramSabhaEngine
+
+    sabha_engine = GramSabhaEngine(seed=42)
+    statuses = {
+        "magistrate": 0.45,
+        "guard": 0.30,
+        "farmer_1": 0.15,
+        "rogue": 0.10,
+    }
+    names = {
+        "magistrate": "Lata",
+        "guard": "Tara",
+        "farmer_1": "Arun",
+        "rogue": "Shifty",
+    }
+
+    record = sabha_engine.convene_sabha(
+        step=100,
+        granary_wheat=12.0,
+        well_water=40.0,
+        drought_active=True,
+        agent_statuses=statuses,
+        agent_names=names,
+        trust_lookup=lambda a, b: 0.8 if a != "rogue" and b != "rogue" else 0.2,
+        known_offenders=[("rogue", "Theft", 2)],
+        emergency_reason="Emergency Famine Drought",
+    )
+    assert record.attendance_count == 4
+    assert record.quorum_achieved is True
+    assert record.passed is True
+    assert "MANDATORY_GRAIN_TITHE_10" in record.policy_enacted
+
+
+def test_closed_loop_production_and_tool_energy_discount() -> None:
+    """Verifies P4: Closed-loop production (Wheat -> Flour -> Bread) and Blacksmith tool energy discount."""
+    from autogen.simulation.core.contracts import Action
+    from autogen.simulation.environment.village.commodities import CommodityType
+    from autogen.simulation.environment.village.village_grid import (
+        VillageActionType,
+        VillageWorld,
+        VillageWorldConfig,
+    )
+    from autogen.simulation.state.types import ActionType
+
+    world = VillageWorld(VillageWorldConfig(width=24, height=24, seed=42))
+
+    # Miller mills wheat into flour & bread
+    miller_id = "villager_meera"
+    world.villagers[miller_id] = world.villagers[miller_id].model_copy(
+        update={"inventory": world.villagers[miller_id].inventory.with_delta(CommodityType.WHEAT, 4.0)}
+    )
+    world.step_village(
+        {
+            miller_id: Action(
+                agent_id=miller_id,
+                action_type=ActionType.COLLECT,
+                parameters={"village_action": VillageActionType.MILL_WHEAT.value},
+            )
+        }
+    )
+    miller_inv = world.villagers[miller_id].inventory
+    assert miller_inv.get(CommodityType.BREAD) > 0.0
+    assert miller_inv.get(CommodityType.FLOUR) > 0.0
+
+    # Farmer with tools harvests with lower energy cost (-40% cost)
+    farmer_id = "villager_arun"
+    energy_before = world.villagers[farmer_id].energy
+    world.villagers[farmer_id] = world.villagers[farmer_id].model_copy(
+        update={"inventory": world.villagers[farmer_id].inventory.with_delta(CommodityType.TOOLS, 1.0)}
+    )
+    world.step_village(
+        {
+            farmer_id: Action(
+                agent_id=farmer_id,
+                action_type=ActionType.COLLECT,
+                parameters={"village_action": VillageActionType.HARVEST_FIELD.value},
+            )
+        }
+    )
+    energy_after = world.villagers[farmer_id].energy
+    # Energy decay per step is 1.1, tool harvest cost is 1.5 instead of 2.5
+    energy_spent = round(energy_before - energy_after, 2)
+    assert energy_spent < 3.0  # Harvest with tools saves substantial energy
+

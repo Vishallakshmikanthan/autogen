@@ -205,3 +205,4 @@ In the 3D WebGL viewport, emotional state directly alters procedural animations:
 ---
 
 > **Architectural Guarantee:** In accordance with [AGENTS.md](file:///c:/Users/Lenovo/Downloads/autogen/AGENTS.md), all emotional transitions, generational genetics, and council votes will execute deterministically in the Python simulation kernel under seeded RNG streams, while NVIDIA Nemotron and 3D WebGL remain downstream narrative and visual decoders.
+
