@@ -34,6 +34,7 @@ from autogen.simulation.core.contracts import Action
 from autogen.simulation.environment.village.commodities import CommodityType
 from autogen.simulation.environment.village.events import WorldEvent
 from autogen.simulation.environment.village.village_grid import (
+    VillageActionType,
     VillageRole,
     VillageWorld,
     VillageWorldConfig,
@@ -51,6 +52,8 @@ class HumanlikeConfig(BaseModel):
     enable_contagion: bool = True
     enable_reflection: bool = True
     enable_weather: bool = True
+    enable_needs: bool = True
+    enable_routines: bool = True
 
 
 class VillageSimulationController:
@@ -94,6 +97,7 @@ class VillageSimulationController:
         self.personas: dict[str, PersonaProfile] = {}
         self.traces_by_agent: dict[str, DecisionTrace] = {}
         self.last_utterances: dict[str, str] = {}
+        self.last_mean_contagion_delta: float = 0.0
         self._init_agents()
 
     def _init_agents(self) -> None:
@@ -392,6 +396,19 @@ class VillageSimulationController:
                 personalities=personalities,
                 relationships=self.relationships,
             )
+            deltas = [
+                float(
+                    (
+                        (next_affective[aid].valence - agent_states[aid].valence) ** 2
+                        + (next_affective[aid].arousal - agent_states[aid].arousal) ** 2
+                        + (next_affective[aid].dominance - agent_states[aid].dominance) ** 2
+                    )
+                    ** 0.5
+                )
+                for aid in agent_states
+                if aid in next_affective
+            ]
+            self.last_mean_contagion_delta = float(sum(deltas) / max(1, len(deltas)))
             for aid, st in next_affective.items():
                 self.agents[aid].affective_state = st
 
@@ -415,6 +432,19 @@ class VillageSimulationController:
                     self.relationships.record_interaction(outcome.actor_id, outcome.target_id, quality=0.40)
                 elif outcome.category in ("defect", "crime_caught", "crime_unseen"):
                     self.relationships.record_interaction(outcome.actor_id, outcome.target_id, quality=-0.60)
+            if self.humanlike_config.enable_needs:
+                contact_q = 0.50 if outcome.action_type == VillageActionType.GREET else (0.30 if outcome.category == "trade" else 0.0)
+                if contact_q > 0.0:
+                    if outcome.actor_id in self.agents:
+                        nst_a = self.agents[outcome.actor_id].needs_engine.state
+                        self.agents[outcome.actor_id].needs_engine.state = nst_a.model_copy(
+                            update={"contact_score": round(nst_a.contact_score + contact_q, 4)}
+                        )
+                    if outcome.target_id and outcome.target_id in self.agents:
+                        nst_t = self.agents[outcome.target_id].needs_engine.state
+                        self.agents[outcome.target_id].needs_engine.state = nst_t.model_copy(
+                            update={"contact_score": round(nst_t.contact_score + contact_q, 4)}
+                        )
         self.relationships.step_decay()
 
         for outcome in self.world.step_outcomes:
@@ -678,7 +708,12 @@ class VillageSimulationController:
         }
         if self.humanlike_config.enable_intentions:
             payload["intentions"] = {
-                aid: self.agents[aid].intention.kind
+                aid: f"{self.agents[aid].intention.kind}:{self.agents[aid].intention.status}"
+                for aid in sorted(self.agents.keys())
+            }
+        if self.humanlike_config.enable_needs:
+            payload["needs_phys"] = {
+                aid: round(self.agents[aid].needs_engine.state.d_phys, 4)
                 for aid in sorted(self.agents.keys())
             }
         raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -706,7 +741,34 @@ class VillageSimulationController:
                 "kind": agent.intention.kind,
                 "progress": round(agent.intention.progress, 2),
                 "commitment": round(agent.intention.commitment, 2),
-                "interrupted_by": agent.pending_alerts[0].percept.event.kind if agent.pending_alerts else None,
+                "step_index": agent.intention.step_index,
+                "status": agent.intention.status,
+                "score": round(agent.intention.score, 3),
+                "interrupted_by": (
+                    agent.pending_alerts[0].percept.event.kind if agent.pending_alerts else None
+                ),
+            }
+            needs_payload = {
+                "deficits": {
+                    "phys": round(agent.needs_engine.state.d_phys, 4),
+                    "safety": round(agent.needs_engine.state.d_safety, 4),
+                    "belonging": round(agent.needs_engine.state.d_belonging, 4),
+                    "esteem": round(agent.needs_engine.state.d_esteem, 4),
+                    "growth": round(agent.needs_engine.state.d_growth, 4),
+                },
+                "gates": {
+                    "phys": round(agent.needs_engine.state.g_phys, 4),
+                    "safety": round(agent.needs_engine.state.g_safety, 4),
+                    "belonging": round(agent.needs_engine.state.g_belonging, 4),
+                    "esteem": round(agent.needs_engine.state.g_esteem, 4),
+                    "growth": round(agent.needs_engine.state.g_growth, 4),
+                },
+                "weights": {
+                    "phys": round(agent.utility_weights.w_phys, 4),
+                    "soc": round(agent.utility_weights.w_soc, 4),
+                    "econ": round(agent.utility_weights.w_econ, 4),
+                },
+                "satiation": dict(agent.needs_engine.state.satiation),
             }
             thought_str = "Observing village activities calmly."
             if agent.dispositions:
@@ -763,6 +825,7 @@ class VillageSimulationController:
                     "intention": intention_payload,
                     "thought": thought_str,
                     "relationships": self.relationships.get_all_for_agent(aid),
+                    "needs": needs_payload,
                 }
             )
 
@@ -827,5 +890,6 @@ class VillageSimulationController:
                 e.model_dump() for e in self.dialogue_bus.get_recent_events(limit=20)
             ],
             "step_outcomes": [o.model_dump() for o in self.world.step_outcomes],
+            "mean_contagion_delta": round(self.last_mean_contagion_delta, 4),
             "cinematic_export": self.world.export_village_world_json(),
         }

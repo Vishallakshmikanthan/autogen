@@ -13,6 +13,7 @@ from autogen.core.types import DecisionTrace
 from autogen.intelligence.village.affective_pad import (
     AffectivePADEngine,
     AffectiveStateVector,
+    AffectiveStimulus,
     EmotionCategory,
 )
 from autogen.intelligence.village.attention import (
@@ -20,13 +21,16 @@ from autogen.intelligence.village.attention import (
     HabituationTracker,
     SalienceAttentionEngine,
 )
+from autogen.intelligence.village.bt import arbitrate_intentions
 from autogen.intelligence.village.intention import (
     LAMBDA_ATT,
     Intention,
+    action_serves_intention,
     compute_reaction_utility,
     compute_switching_cost,
     should_interrupt,
 )
+from autogen.intelligence.village.needs import NeedsEngine
 from autogen.intelligence.village.personality import (
     CANONICAL_AGENT_TRAITS,
     Traits,
@@ -101,8 +105,12 @@ class VillagerAgent(BaseAgent):
         self.traits: Traits = traits or CANONICAL_AGENT_TRAITS.get(agent_id, Traits())
         derived_w, self.personality = weights_from_traits(self.traits, role=self.role)
         final_weights = utility_weights if utility_weights is not None else derived_w
+        self.base_utility_weights = final_weights
 
         self.utility_engine = UtilityEngine(weights=final_weights)
+        self.needs_engine = NeedsEngine(seed=42)
+        self.circadian_priors: dict[str, float] = {}
+        self.intention_scores: dict[str, float] = {}
         self.affective_engine = AffectivePADEngine(baseline=self.personality.pad_baseline)
         self.affective_state = AffectiveStateVector(
             agent_id=agent_id,
@@ -112,6 +120,9 @@ class VillagerAgent(BaseAgent):
         )
 
         self.intention = Intention(kind="ROUTINE", commitment=1.0)
+        self.needs_engine = NeedsEngine(seed=42)
+        self.utility_engine = UtilityEngine(weights=self.base_utility_weights)
+        self.intention_scores = {}
         self.attention_tracker = HabituationTracker()
         self.attention_engine = SalienceAttentionEngine(self.attention_tracker)
         self.pending_alerts: list[Alert] = []
@@ -159,6 +170,35 @@ class VillagerAgent(BaseAgent):
             self.last_gaze_pos = village_obs.percepts[0].event.position
             self.last_gaze_reason = village_obs.percepts[0].event.kind
 
+        # Affective appraisal of threat alerts (§2.2, D4 fix: thunderstorms produce fear/distress)
+        for alert in self.pending_alerts:
+            ev = alert.percept.event
+            if alert.threat > 0.0 or ev.kind in ("THUNDER", "CRY_OUT"):
+                fear_stim = AffectiveStimulus(
+                    stimulus_type="threat_alert",
+                    stimulus_name=f"alert_{ev.kind.lower()}",
+                    delta_v=-0.50 * alert.salience * (0.60 + 0.40 * self.traits.neuroticism),
+                    delta_a=+0.70 * alert.salience * (0.60 + 0.40 * self.traits.neuroticism),
+                    delta_d=-0.40 * alert.salience,
+                )
+                self.affective_state = self.affective_engine.step_emotion(
+                    agent_id=self.agent_id,
+                    step=village_obs.step,
+                    current_state=self.affective_state,
+                    stimuli=[fear_stim],
+                )
+
+        # Intention lifecycle management (§5.4, D1 fix)
+        is_raining = any(p.event.kind in ("THUNDER", "RAIN_ONSET") for p in village_obs.percepts)
+        if self.intention.kind in ("SHELTER", "RESPOND"):
+            if not is_raining:
+                self.intention = self.intention.mark_done()
+        elif self.intention.kind == "GREET":
+            if self.intention.progress >= 0.50 or (village_obs.step - self.intention.started_step) >= 2:
+                self.intention = self.intention.mark_done()
+        elif self.intention.is_expired(village_obs.step) or self.intention.is_terminal():
+            self.intention = self.intention.mark_done()
+
         # Intention arbitration: check for interruptions
         for alert in self.pending_alerts:
             if should_interrupt(alert, self.intention, self.traits.conscientiousness):
@@ -168,6 +208,7 @@ class VillagerAgent(BaseAgent):
                         kind="SHELTER",
                         started_step=village_obs.step,
                         commitment=0.95,
+                        max_duration=12,
                     )
                     break
                 elif kind == "CRY_OUT":
@@ -176,6 +217,7 @@ class VillagerAgent(BaseAgent):
                         started_step=village_obs.step,
                         target_pos=alert.percept.event.position,
                         commitment=0.85,
+                        max_duration=10,
                     )
                     break
                 elif kind == "ARRIVAL":
@@ -183,7 +225,8 @@ class VillagerAgent(BaseAgent):
                         kind="GREET",
                         started_step=village_obs.step,
                         target_id=alert.percept.event.source_id,
-                        commitment=0.70,
+                        commitment=0.75,
+                        max_duration=6,
                     )
                     break
 
@@ -900,14 +943,69 @@ class VillagerAgent(BaseAgent):
             return act, trace
 
         v_obs = self._last_village_obs
-        ranked = self.evaluate_all_pathways(v_obs)
+
+        # Phase 2e: Dynamic Needs, Prepotency Gating & Drive Pressures (§5.3)
+        max_threat = max((a.threat for a in self.pending_alerts), default=0.0)
+        need_st = self.needs_engine.step(
+            obs=v_obs,
+            traits=self.traits,
+            contact_quality=0.0,
+            executed_action=None,
+            max_village_status=1.0,
+            max_threat=max_threat,
+        )
+        dynamic_w = self.needs_engine.get_dynamic_weights(self.base_utility_weights)
+        self.utility_engine.weights = dynamic_w
+
+        # Reset expired or completed intention to allow fresh deliberative arbitration
+        if self.intention.is_terminal() or self.intention.is_expired(v_obs.step):
+            self.intention = Intention(kind="ROUTINE", started_step=v_obs.step, commitment=0.70)
+
+        # Deliberate across all potential village pathways
+        all_cands = self.evaluate_all_pathways(v_obs)
+
+        # Phase 3: Behavior Tree Intention Arbitration (§5.4)
+        has_emerg = any(
+            a.threat > 0.40 or a.percept.event.kind in ("THUNDER", "RAIN_ONSET")
+            for a in self.pending_alerts
+        )
+        self.intention, self.intention_scores = arbitrate_intentions(
+            current_intention=self.intention,
+            current_step=v_obs.step,
+            need_state=need_st,
+            weights=dynamic_w,
+            role=self.role,
+            time_of_day=v_obs.time_of_day,
+            candidate_evals=all_cands,
+            switching_cost_scale=self.personality.switching_cost_scale,
+            has_active_emergency=has_emerg,
+        )
+
+        # Restrict candidate action selection to intention-serving actions ∪ safety actions (§5.4)
+        filtered_cands = [
+            c for c in all_cands
+            if action_serves_intention(c.action_type, self.intention)
+            or c.action_type in (VillageActionType.CONSUME_RATION, VillageActionType.SHELTER)
+            or (c.is_unethical and need_st.d_phys > 0.70)
+        ]
+        ranked = filtered_cands if filtered_cands else all_cands
         self.last_evaluations = ranked
         best = ranked[0]
+
+        # Advance intention progress if action aligns
+        if action_serves_intention(best.action_type, self.intention):
+            self.intention = self.intention.with_progress(0.35)
 
         # Determine target coordinate for spatial execution
         target_pos = v_obs.position
         if best.action_type == VillageActionType.REST_HUT:
             target_pos = v_obs.home_hut_position
+        elif best.action_type == VillageActionType.DRAW_WATER:
+            target_pos = v_obs.zone_centers.get("town_well", v_obs.position)
+        elif best.action_type == VillageActionType.TRADE_MARKET:
+            target_pos = v_obs.zone_centers.get("market_square", v_obs.position)
+        elif best.action_type == VillageActionType.HARVEST_FIELD:
+            target_pos = v_obs.zone_centers.get("farm_fields", v_obs.position)
         elif best.target_zone and best.target_zone in v_obs.zone_centers:
             target_pos = v_obs.zone_centers[best.target_zone]
 
@@ -952,6 +1050,14 @@ class VillagerAgent(BaseAgent):
             "u_react": round(best_u_react, 4),
             "c_switch": round(best_c_switch, 4),
             "intention": self.intention.kind,
+            "intention_status": self.intention.status,
+            "intention_score": round(self.intention.score, 3),
+            "intention_step_index": self.intention.step_index,
+            "needs": {
+                "deficits": list(need_st.deficits_tuple),
+                "gates": list(need_st.gates_tuple),
+                "pressures": list(need_st.pressures_tuple),
+            },
             "gaze": {
                 "target_pos": [self.last_gaze_pos.x, self.last_gaze_pos.y] if self.last_gaze_pos else [v_obs.position.x, v_obs.position.y],
                 "reason": self.last_gaze_reason,
@@ -1032,6 +1138,9 @@ class VillagerAgent(BaseAgent):
             dominance=self.personality.pad_baseline[2],
         )
         self.intention = Intention(kind="ROUTINE", commitment=1.0)
+        self.needs_engine = NeedsEngine(seed=42)
+        self.utility_engine = UtilityEngine(weights=self.base_utility_weights)
+        self.intention_scores = {}
         self.attention_tracker = HabituationTracker()
         self.attention_engine = SalienceAttentionEngine(self.attention_tracker)
         self.pending_alerts = []

@@ -590,5 +590,87 @@ def populate_default_catalog() -> None:
         )
     )
 
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="needs_prepotency",
+            name="Maslow-Style Soft Prepotency Needs & Dynamic Utility Weights",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/needs_prepotency.md",
+            complexity_time="O(K) constant-time 5-level need evaluations",
+            complexity_space="O(K) state vectors and satiation hash maps",
+            assumptions=[
+                "Deficits in [0, 1] drive quadratic pressure rises",
+                "Lower-level physiological deficits softly throttle higher-level belonging and esteem via prepotency product",
+            ],
+            hyperparameters={
+                "p_exponent": "Pressure exponent (default 2.0)",
+                "beta_gate": "Prepotency soft-gating power (default 0.70)",
+                "lambda_weight": "Pressure gain scalar on base utility weights (default 2.0)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Maslow / Hull",
+                    title="A Theory of Human Motivation / Principles of Behavior",
+                    year=1943,
+                    chapter_or_pages="Psychological Review, 50(4), pp. 370-396 / Appleton-Century",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="utility_behavior_tree",
+            name="Utility-Guided Hierarchical Intention Behavior Tree with Hysteresis",
+            family=AlgorithmFamily.PLANNING,
+            doc_path="docs/algorithms/village/utility_behavior_tree.md",
+            complexity_time="O(I * A) scoring across candidate intention trees and actions",
+            complexity_space="O(I) sequential intention specifications",
+            assumptions=[
+                "Multi-step sequential intentions preserve temporal continuity",
+                "Hysteresis barrier prevents high-frequency intention oscillations",
+            ],
+            hyperparameters={
+                "hysteresis_factor": "Relative hysteresis margin factor on intention score",
+                "hysteresis_base": "Absolute hysteresis threshold margin",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Colledanchise & Ögren",
+                    title="Behavior Trees in Robotics and AI: An Introduction",
+                    year=2018,
+                    chapter_or_pages="CRC Press, Chapters 2-4",
+                )
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="circadian_routines",
+            name="Circadian Daily Routines and Role-Specific Temporal Priors",
+            family=AlgorithmFamily.PLANNING,
+            doc_path="docs/algorithms/village/circadian_routines.md",
+            complexity_time="O(1) circular Gaussian prior evaluation",
+            complexity_space="O(R * I) role schedule prior catalog",
+            assumptions=[
+                "Time of day on 24-hour circular topology introduces smooth circadian utility biases",
+                "Occupational roles define distinct daily activity peaks and sleeping rhythms",
+            ],
+            hyperparameters={
+                "sigma": "Hour variance of Gaussian circadian curve",
+                "amplitude": "Peak circadian utility score boost amplitude",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Winfree",
+                    title="The Geometry of Biological Time",
+                    year=2001,
+                    chapter_or_pages="Springer-Verlag, 2nd Edition",
+                )
+            ],
+        )
+    )
+
 # Automatically populate on module load
 populate_default_catalog()

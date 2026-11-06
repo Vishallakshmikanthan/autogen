@@ -16,11 +16,11 @@ from autogen.simulation.state.types import Position
 
 
 class Intention(BaseModel):
-    """An active behavioral goal with temporal commitment and interruptibility (§2.5)."""
+    """An active behavioral goal with temporal commitment and interruptibility (§2.5, §5.4)."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: str = "ROUTINE"  # "ROUTINE", "SHELTER", "INVESTIGATE_NOISE", "GREET", "WORK_FIELD", "REST_HUT", "FLEE"
+    kind: str = "ROUTINE"  # "ROUTINE", "SHELTER", "INVESTIGATE_NOISE", "GREET", "WORK", "MARKET", "SOCIALIZE", "REST", "SURVIVE_FOOD", "SURVIVE_WATER", "RESPOND"
     goal_zone: str = ""
     target_id: str | None = None
     target_pos: Position | None = None
@@ -28,16 +28,37 @@ class Intention(BaseModel):
     commitment: float = Field(default=1.0, ge=0.0, le=1.0, description="Commitment level decaying over time")
     interruptible: bool = True
     progress: float = Field(default=0.0, ge=0.0, le=1.0, description="Completion fraction in [0, 1]")
+    step_index: int = Field(default=0, ge=0, description="Active sequential sub-step index in behavior tree")
+    max_duration: int = Field(default=24, ge=1, description="Maximum ticks allowed before intention times out")
+    status: str = Field(default="ACTIVE", description="ACTIVE, DONE, or FAILED")
+    score: float = Field(default=0.0, description="Deliberative evaluation score of intention")
+
+    def is_expired(self, current_step: int) -> bool:
+        """Checks if intention exceeded max_duration lifetime."""
+        return (current_step - self.started_step) >= self.max_duration
+
+    def is_terminal(self) -> bool:
+        """Checks if intention is completed or failed."""
+        return self.status in ("DONE", "FAILED") or self.progress >= 1.0
 
     def with_progress(self, progress_delta: float) -> Intention:
         """Returns updated Intention with incremented progress."""
         next_p = float(np.clip(self.progress + progress_delta, 0.0, 1.0))
-        return self.model_copy(update={"progress": next_p})
+        next_status = "DONE" if next_p >= 1.0 else self.status
+        return self.model_copy(update={"progress": next_p, "status": next_status})
 
     def with_decayed_commitment(self, factor: float = 0.98) -> Intention:
         """Decays commitment over time if uncompleted."""
         next_c = float(np.clip(self.commitment * factor, 0.05, 1.0))
         return self.model_copy(update={"commitment": next_c})
+
+    def mark_done(self) -> Intention:
+        """Marks intention as successfully completed."""
+        return self.model_copy(update={"status": "DONE", "progress": 1.0})
+
+    def mark_failed(self) -> Intention:
+        """Marks intention as failed or unreachable."""
+        return self.model_copy(update={"status": "FAILED"})
 
 
 HYSTERESIS: float = 0.15
@@ -74,10 +95,12 @@ def action_serves_intention(action: VillageActionType, intention: Intention) -> 
     if k in ("ROUTINE", "IDLE"):
         return True
 
-    if k == "SHELTER":
+    if k in ("SHELTER", "RESPOND"):
         return action in (
             VillageActionType.SHELTER,
             VillageActionType.REST_HUT,
+            VillageActionType.INVESTIGATE_NOISE,
+            VillageActionType.INVESTIGATE_CRIME,
             VillageActionType.STAY,
             VillageActionType.MOVE_NORTH,
             VillageActionType.MOVE_SOUTH,
@@ -101,10 +124,62 @@ def action_serves_intention(action: VillageActionType, intention: Intention) -> 
             VillageActionType.STAY,
         )
 
-    if k in ("WORK_FIELD", "HARVEST"):
+    if k in ("SURVIVE_FOOD", "EAT"):
+        return action in (
+            VillageActionType.CONSUME_RATION,
+            VillageActionType.CLAIM_FAMINE_RELIEF,
+            VillageActionType.REST_HUT,
+            VillageActionType.STAY,
+            VillageActionType.MOVE_NORTH,
+            VillageActionType.MOVE_SOUTH,
+            VillageActionType.MOVE_EAST,
+            VillageActionType.MOVE_WEST,
+        )
+
+    if k in ("SURVIVE_WATER", "DRINK"):
+        return action in (
+            VillageActionType.DRAW_WATER,
+            VillageActionType.CONSUME_RATION,
+            VillageActionType.STAY,
+            VillageActionType.MOVE_NORTH,
+            VillageActionType.MOVE_SOUTH,
+            VillageActionType.MOVE_EAST,
+            VillageActionType.MOVE_WEST,
+        )
+
+    if k in ("WORK", "WORK_FIELD", "HARVEST"):
         return action in (
             VillageActionType.HARVEST_FIELD,
+            VillageActionType.FORAGE_FOREST,
+            VillageActionType.DRAW_WATER,
+            VillageActionType.MILL_WHEAT,
+            VillageActionType.FORGE_TOOLS,
+            VillageActionType.BREW_HEALING_BROTH,
+            VillageActionType.PATROL_GUARD,
             VillageActionType.TITHE_GRANARY,
+            VillageActionType.MOVE_NORTH,
+            VillageActionType.MOVE_SOUTH,
+            VillageActionType.MOVE_EAST,
+            VillageActionType.MOVE_WEST,
+            VillageActionType.STAY,
+        )
+
+    if k == "MARKET":
+        return action in (
+            VillageActionType.TRADE_MARKET,
+            VillageActionType.HOARD_AND_GOUGE,
+            VillageActionType.MOVE_NORTH,
+            VillageActionType.MOVE_SOUTH,
+            VillageActionType.MOVE_EAST,
+            VillageActionType.MOVE_WEST,
+            VillageActionType.STAY,
+        )
+
+    if k == "SOCIALIZE":
+        return action in (
+            VillageActionType.GREET,
+            VillageActionType.SING_BALLAD,
+            VillageActionType.COURTSHIP_BOND,
             VillageActionType.MOVE_NORTH,
             VillageActionType.MOVE_SOUTH,
             VillageActionType.MOVE_EAST,
@@ -115,7 +190,12 @@ def action_serves_intention(action: VillageActionType, intention: Intention) -> 
     if k in ("REST_HUT", "REST", "SLEEP"):
         return action in (
             VillageActionType.REST_HUT,
+            VillageActionType.MOURN_AT_CHAPEL,
             VillageActionType.STAY,
+            VillageActionType.MOVE_NORTH,
+            VillageActionType.MOVE_SOUTH,
+            VillageActionType.MOVE_EAST,
+            VillageActionType.MOVE_WEST,
         )
 
     return True
