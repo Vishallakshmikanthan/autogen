@@ -54,6 +54,7 @@ class HumanlikeConfig(BaseModel):
     enable_weather: bool = True
     enable_needs: bool = True
     enable_routines: bool = True
+    enable_memory_stream: bool = True
 
 
 class VillageSimulationController:
@@ -487,9 +488,24 @@ class VillageSimulationController:
         # Phase 5c: Sleep-time reflection and grudge consolidation (§4.4)
         if self.humanlike_config.enable_reflection:
             is_night = self.world.time_of_day >= 22.0 or self.world.time_of_day <= 5.0
+            granary_wheat = float(self.world.granary.storage.get(CommodityType.WHEAT))
             for ag in self.agents.values():
-                if is_night or ag.intention.kind in ("REST_HUT", "REST"):
-                    ag.reflect_nightly()
+                v_phys = self.world.villagers.get(ag.agent_id)
+                comp_act = v_phys.last_action if v_phys else None
+                if is_night or ag.intention.kind in ("REST_HUT", "REST") or comp_act == VillageActionType.REST_HUT:
+                    ag.reflect_nightly(
+                        completed_action=comp_act,
+                        is_drought=getattr(self.world, "drought_active", False),
+                        granary_wheat=granary_wheat,
+                    )
+
+            # Nudge dyadic relationship affinity baseline from reflective dispositions (§4.5)
+            for aid, ag in self.agents.items():
+                for tid, disp in ag.dispositions.items():
+                    cur_aff = self.relationships.get_affinity(aid, tid)
+                    target_aff = (1.0 + disp.valence) / 2.0
+                    nudge_aff = cur_aff + 0.05 * (target_aff - cur_aff)
+                    self.relationships.set_affinity(aid, tid, float(round(nudge_aff, 4)))
 
         # Phase 5b: Update Justice Forensics, Redemption Service, Lifecycle, and Gram Sabha
         for outcome in self.world.step_outcomes:
@@ -513,6 +529,21 @@ class VillageSimulationController:
                     service_type="Granary Commons Restitution",
                     trust_graph=self.trust_graph,
                 )
+                # Witnessing community service triggers stochastic forgiveness check (§4.4)
+                for witness_id in outcome.witness_ids:
+                    if witness_id in self.agents and outcome.actor_id in self.agents[witness_id].dispositions:
+                        w_agent = self.agents[witness_id]
+                        w_disp = w_agent.dispositions[outcome.actor_id]
+                        w_rng = self.seed_manager.spawn_stream(f"forgiveness:{witness_id}")
+                        new_disp, forgiven = ReflectionEngine.check_forgiveness(
+                            disposition=w_disp,
+                            traits=w_agent.traits,
+                            witnessed_community_service=True,
+                            steps_since_harm=self.world.step_count,
+                            rng=w_rng,
+                        )
+                        if forgiven:
+                            w_agent.dispositions[outcome.actor_id] = new_disp
 
         if self.sabha_ticks_remaining > 0:
             self.sabha_ticks_remaining -= 1
@@ -826,6 +857,11 @@ class VillageSimulationController:
                     "thought": thought_str,
                     "relationships": self.relationships.get_all_for_agent(aid),
                     "needs": needs_payload,
+                    "memory": {
+                        "stream_size": len(agent.memory_stream),
+                        "unreflected_count": len(agent.memory_stream.unreflected()),
+                        "recent_reflections": [m.summary for m in agent.memory_stream.all_items() if m.kind == "reflection"][-3:],
+                    },
                 }
             )
 

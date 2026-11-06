@@ -24,6 +24,7 @@ class EmotionCategory(str, Enum):
     GUILT = "Guilt / Remorse"
     RIGHTEOUS_ANGER = "Righteous Anger"
     CALM = "Calm / Composed"
+    FEAR = "Fear / Distress"
 
 
 # Canonical PAD coordinates (v, a, d) from Blueprint Table §2.1
@@ -35,6 +36,7 @@ CANONICAL_EMOTION_COORDS: dict[EmotionCategory, tuple[float, float, float]] = {
     EmotionCategory.GUILT: (-0.60, 0.40, -0.60),
     EmotionCategory.RIGHTEOUS_ANGER: (-0.60, 0.90, 0.70),
     EmotionCategory.CALM: (0.05, 0.00, 0.10),
+    EmotionCategory.FEAR: (-0.64, 0.60, -0.43),
 }
 
 EMOTION_BEHAVIORAL_IMPACT: dict[EmotionCategory, str] = {
@@ -45,6 +47,7 @@ EMOTION_BEHAVIORAL_IMPACT: dict[EmotionCategory, str] = {
     EmotionCategory.GUILT: "Covert restitution, community service, heightened detection anxiety",
     EmotionCategory.RIGHTEOUS_ANGER: "Sounding alarm bell, escorting offender to pillory, public denunciation",
     EmotionCategory.CALM: "Balanced deliberation and steady village craftsmanship",
+    EmotionCategory.FEAR: "Seeking shelter, rapid scanning, seeking protective companions, trembling posture",
 }
 
 
@@ -207,6 +210,9 @@ class AffectivePADEngine:
         elif cat == EmotionCategory.RIGHTEOUS_ANGER:
             speed_mult = 1.25
             aura_hex = "#f97316"
+        elif cat == EmotionCategory.FEAR:
+            speed_mult = 1.30
+            aura_hex = "#fbbf24"
 
         return cat, intensity, EMOTION_BEHAVIORAL_IMPACT[cat], speed_mult, aura_hex
 
@@ -531,6 +537,8 @@ class AffectivePADEngine:
             enforcement_drive += 1.40
         elif cat == EmotionCategory.GRIEF:
             coop_bonus += 0.25  # Altruistic bonding during mourning (§3.1)
+        elif cat == EmotionCategory.FEAR:
+            theft_temptation -= 0.50
 
         return {
             "coop_bonus": round(coop_bonus, 4),

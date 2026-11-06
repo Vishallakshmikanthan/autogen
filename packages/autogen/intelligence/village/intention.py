@@ -223,7 +223,7 @@ def compute_reaction_utility(
 
         if action == VillageActionType.SHELTER:
             if ev.kind in ("THUNDER", "RAIN_ONSET") or alert.threat > 0.40:
-                bonus += s * (1.0 + 0.50 * traits.neuroticism)
+                bonus += 2.50 * s * (1.0 + 0.50 * traits.neuroticism)
 
         elif action == VillageActionType.INVESTIGATE_NOISE:
             if ev.modality == ev.modality.AUDITORY or ev.kind in ("CRY_OUT", "CHASE"):

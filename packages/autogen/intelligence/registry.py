@@ -672,5 +672,150 @@ def populate_default_catalog() -> None:
         )
     )
 
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="memory_importance",
+            name="Episodic Memory Importance Scoring via Valence Extremity and Saliency",
+            family=AlgorithmFamily.HYBRID,
+            doc_path="docs/algorithms/village/memory_stream.md",
+            complexity_time="O(1) per memory item insertion",
+            complexity_space="O(1) metadata fields per memory item",
+            assumptions=[
+                "Emotional valence extremity |v| strongly dictates memory encoding saliency",
+                "Survival-critical, social, and justice events receive structured significance baselines",
+            ],
+            hyperparameters={
+                "w_valence": "Weight on emotional valence extremity |v| (default 0.35)",
+                "w_saliency": "Weight on domain event saliency (default 0.45)",
+                "w_base": "Default baseline importance (default 0.20)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Park et al.",
+                    title="Generative Agents: Interactive Simulacra of Human Behavior",
+                    year=2023,
+                    chapter_or_pages="UIST '23, pp. 1-22",
+                ),
+                CitationRecord(
+                    author_or_source="Kahneman",
+                    title="Thinking, Fast and Slow",
+                    year=2011,
+                    chapter_or_pages="Farrar, Straus and Giroux, Part 4",
+                ),
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="memory_retrieval",
+            name="Multimodal Memory Retrieval with Mood-Congruence and Deterministic Tie-Breaking",
+            family=AlgorithmFamily.SEARCH,
+            doc_path="docs/algorithms/village/memory_retrieval.md",
+            complexity_time="O(N log K) top-k selection across stream of size N",
+            complexity_space="O(K) retrieved memory buffer",
+            assumptions=[
+                "Linear combination of recency, importance, keyword relevance, and PAD mood congruence reflects retrieval relevance",
+                "Deterministic tie-breaking preserves exact simulation reproducibility across runs",
+            ],
+            hyperparameters={
+                "w_recency": "Weight on exponential recency decay (default 0.25)",
+                "w_importance": "Weight on intrinsic memory importance (default 0.30)",
+                "w_relevance": "Weight on token/entity Jaccard overlap (default 0.30)",
+                "w_mood": "Weight on affective PAD Euclidean congruence (default 0.15)",
+                "decay_rate": "Exponential decay factor for recency (default 0.995)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Bower",
+                    title="Mood and Memory",
+                    year=1981,
+                    chapter_or_pages="American Psychologist, 36(2), pp. 129-148",
+                ),
+                CitationRecord(
+                    author_or_source="Park et al.",
+                    title="Generative Agents: Interactive Simulacra of Human Behavior",
+                    year=2023,
+                    chapter_or_pages="UIST '23, pp. 1-22",
+                ),
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="memory_forgetting",
+            name="Ebbinghaus-Power Retention Strength and Bounded Pruning with Unreflected Protection",
+            family=AlgorithmFamily.HYBRID,
+            doc_path="docs/algorithms/village/memory_stream.md",
+            complexity_time="O(N log N) sorting during capacity eviction",
+            complexity_space="O(N) memory stream storage strictly bounded at capacity cap (default 300)",
+            assumptions=[
+                "Retention strength decays exponentially from last access step, modulated logarithmically by access count",
+                "Unreflected memories are protected from eviction during pruning unless stream is strictly full of unreflected items",
+            ],
+            hyperparameters={
+                "halflife_s0": "Base halflife scaling factor in steps (default 50.0)",
+                "access_log_coeff": "Logarithmic reinforcement multiplier (default 0.30)",
+                "capacity_cap": "Maximum items in memory stream (default 300)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Ebbinghaus",
+                    title="Memory: A Contribution to Experimental Psychology",
+                    year=1885,
+                    chapter_or_pages="Teachers College, Columbia University",
+                ),
+                CitationRecord(
+                    author_or_source="Wixted & Ebbesen",
+                    title="On the Form of Forgetting",
+                    year=1991,
+                    chapter_or_pages="Psychological Science, 2(6), pp. 409-415",
+                ),
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="reflection_consolidation",
+            name="Reflection Consolidation, Situational Attribution, and Forgiveness Dynamics",
+            family=AlgorithmFamily.HYBRID,
+            doc_path="docs/algorithms/village/reflection_consolidation.md",
+            complexity_time="O(M * T) episode consolidation, crime pattern aggregation, and attribution evaluation",
+            complexity_space="O(M) synthesized reflection items",
+            assumptions=[
+                "Accumulated importance over recent memory items triggers synthesis of higher-order beliefs",
+                "Situational attribution discounts moral blame when environmental stressors (drought, resource shortage) are observable",
+                "Restitution and time promote probabilistic forgiveness modulated by Agreeableness and Neuroticism",
+            ],
+            hyperparameters={
+                "reflection_importance_threshold": "Summed importance triggering reflection (default 15.0)",
+                "unreflected_item_count_threshold": "Unreflected memory count triggering reflection (default 25)",
+                "drought_stress_weight": "Weight of drought stress in situational attribution (default 0.50)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Kelley",
+                    title="Attribution Theory in Social Psychology",
+                    year=1967,
+                    chapter_or_pages="Nebraska Symposium on Motivation, 15, pp. 192-238",
+                ),
+                CitationRecord(
+                    author_or_source="Park et al.",
+                    title="Generative Agents: Interactive Simulacra of Human Behavior",
+                    year=2023,
+                    chapter_or_pages="UIST '23, pp. 1-22",
+                ),
+                CitationRecord(
+                    author_or_source="McCullough et al.",
+                    title="Interpersonal Forgiving in Close Relationships",
+                    year=1997,
+                    chapter_or_pages="Journal of Personality and Social Psychology, 73(2), pp. 321-336",
+                ),
+            ],
+        )
+    )
+
 # Automatically populate on module load
 populate_default_catalog()

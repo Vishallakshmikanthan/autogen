@@ -64,6 +64,15 @@ class VillageRelationshipStore:
         """Returns directed affinity scalar in [0, 1]."""
         return self.get_relationship(source_id, target_id).affinity
 
+    def set_affinity(self, source_id: str, target_id: str, affinity: float) -> None:
+        """Sets directed affinity scalar in [0, 1] nudged by reflective dispositions (§4.5)."""
+        if source_id == target_id:
+            return
+        rel = self.get_relationship(source_id, target_id)
+        self._relations[(source_id, target_id)] = rel.model_copy(
+            update={"affinity": float(round(min(1.0, max(0.0, affinity)), 4))}
+        )
+
     def record_interaction(self, source_id: str, target_id: str, quality: float) -> None:
         """Updates directed relationship following a shared event or greeting."""
         if source_id == target_id:

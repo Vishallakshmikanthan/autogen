@@ -30,6 +30,8 @@ from autogen.intelligence.village.intention import (
     compute_switching_cost,
     should_interrupt,
 )
+from autogen.intelligence.village.memory_retrieval import MemoryQuery, retrieve_top_k
+from autogen.intelligence.village.memory_stream import MemoryStream
 from autogen.intelligence.village.needs import NeedsEngine
 from autogen.intelligence.village.personality import (
     CANONICAL_AGENT_TRAITS,
@@ -129,6 +131,7 @@ class VillagerAgent(BaseAgent):
         self.notices: list[PerceivedEvent] = []
         self.dispositions: dict[str, Disposition] = {}
         self.unreflected_episodes: list[MemoryEpisode] = []
+        self.memory_stream = MemoryStream(agent_id=self.agent_id, capacity=300)
         self.last_gaze_pos: Position | None = None
         self.last_gaze_reason: str = ""
 
@@ -169,6 +172,20 @@ class VillagerAgent(BaseAgent):
         elif village_obs.percepts:
             self.last_gaze_pos = village_obs.percepts[0].event.position
             self.last_gaze_reason = village_obs.percepts[0].event.kind
+
+        # Encode significant environmental percepts into MemoryStream (§4.1)
+        for p in village_obs.percepts:
+            if p.event.kind in ("THUNDER", "RAIN_ONSET", "CRY_OUT"):
+                self.memory_stream.create_and_add(
+                    step=village_obs.step,
+                    kind="observation",
+                    location=village_obs.current_zone.value if village_obs.current_zone else "",
+                    summary=f"Witnessed {p.event.kind} (intensity={p.event.intensity:.2f})",
+                    tags=("weather", "storm" if "RAIN" in p.event.kind or "THUNDER" in p.event.kind else "sound"),
+                    valence=p.event.valence_hint,
+                    pad=self.affective_state.to_tuple(),
+                    self_involvement=1.0 if p.event.is_global else 0.5,
+                )
 
         # Affective appraisal of threat alerts (§2.2, D4 fix: thunderstorms produce fear/distress)
         for alert in self.pending_alerts:
@@ -278,6 +295,38 @@ class VillagerAgent(BaseAgent):
                         description=out.description,
                     )
                 )
+
+            # Ingest into structured MemoryStream (§4.1)
+            is_actor = out.actor_id == self.agent_id
+            is_target = out.target_id == self.agent_id if out.target_id else False
+            self_inv = 1.0 if (is_actor or is_target) else 0.5
+            is_harm_out = out.category in ("defect", "crime_caught", "crime_unseen")
+            is_help_out = out.category in ("coop", "trade")
+            val_out = -0.60 if is_harm_out else (0.50 if is_help_out else 0.0)
+
+            out_tags = [out.category]
+            if is_harm_out:
+                out_tags.append("theft" if "steal" in out.action_type.value.lower() or "crime" in out.category else "defect")
+            if is_help_out:
+                out_tags.append("kindness")
+            if out.target_id:
+                out_tags.append(f"target_{out.target_id}")
+
+            self.memory_stream.create_and_add(
+                step=out.step,
+                kind="action" if is_actor else "observation",
+                actors=(out.actor_id, out.target_id) if out.target_id else (out.actor_id,),
+                location=v_obs.current_zone.value if v_obs.current_zone else "",
+                summary=out.description,
+                tags=tuple(out_tags),
+                valence=val_out,
+                pad=self.affective_state.to_tuple(),
+                self_involvement=self_inv,
+                consequence=0.20 if is_actor or is_target else 0.0,
+            )
+
+        # Periodic forgetting / pruning (§4.3)
+        self.memory_stream.prune(v_obs.step)
 
         # Estimate subjective detection probability from visible witnesses and ambient light
         est_det = self.estimate_subjective_detection_probability(v_obs)
@@ -814,6 +863,11 @@ class VillagerAgent(BaseAgent):
             )
 
         # 11. Humanlike Reactive Pathways (§2.5)
+        dist_shelter = min(
+            dist_to("chapel"),
+            dist_to("private_huts"),
+            float(v_obs.position.manhattan_distance(v_obs.home_hut_position)),
+        )
         candidates.append(
             self.utility_engine.evaluate_action(
                 action_type=VillageActionType.SHELTER,
@@ -830,8 +884,8 @@ class VillagerAgent(BaseAgent):
                 projected_coins=c,
                 projected_inventory=inv,
                 projected_status=s,
-                distance_cost=dist_to("chapel") * 0.2,
-                target_zone="chapel",
+                distance_cost=dist_shelter * 0.08,
+                target_zone="shelter",
                 rationale_note="Seek immediate indoor shelter from thunderstorm or hazards.",
             )
         )
@@ -858,29 +912,53 @@ class VillagerAgent(BaseAgent):
             )
         )
 
-        candidates.append(
-            self.utility_engine.evaluate_action(
-                action_type=VillageActionType.GREET,
-                current_hunger=h,
-                current_hydration=t,
-                current_energy=e,
-                current_coins=c,
-                current_inventory=inv,
-                clearing_prices=prices,
-                current_status=s,
-                projected_hunger=h,
-                projected_hydration=t,
-                projected_energy=e,
-                projected_coins=c,
-                projected_inventory=inv,
-                projected_status=s + 0.01,
-                distance_cost=0.0,
-                target_zone="self",
-                rationale_note="Exchange greetings with a nearby villager.",
-            )
+        has_nearby_peer = any(
+            v_obs.position.manhattan_distance(vv.position) <= 3
+            for vv in v_obs.visible_villagers
         )
+        has_arrival_alert = any(a.percept.event.kind == "ARRIVAL" for a in self.pending_alerts)
+        if has_nearby_peer or has_arrival_alert:
+            candidates.append(
+                self.utility_engine.evaluate_action(
+                    action_type=VillageActionType.GREET,
+                    current_hunger=h,
+                    current_hydration=t,
+                    current_energy=e,
+                    current_coins=c,
+                    current_inventory=inv,
+                    clearing_prices=prices,
+                    current_status=s,
+                    projected_hunger=h,
+                    projected_hydration=t,
+                    projected_energy=e,
+                    projected_coins=c,
+                    projected_inventory=inv,
+                    projected_status=s + 0.01,
+                    distance_cost=0.0,
+                    target_zone="self",
+                    rationale_note="Exchange greetings with a nearby villager.",
+                )
+            )
 
-        # Modulate candidates with u_react and C_switch (§2.5)
+        # Identify nearest visible peer for relational utility (§4.5)
+        nearest_peer_id: str | None = None
+        if v_obs.visible_villagers:
+            nearest_peer = min(
+                v_obs.visible_villagers,
+                key=lambda vv: v_obs.position.manhattan_distance(vv.position),
+            )
+            nearest_peer_id = nearest_peer.agent_id
+
+        disp = self.dispositions.get(nearest_peer_id) if nearest_peer_id else None
+        u_rel_peer = 2.0 * disp.confidence * (disp.fondness - disp.grudge) if disp else 0.0
+
+        # Crime pattern beliefs for guards (§4.5)
+        crime_beliefs = [
+            m for m in self.memory_stream.all_items()
+            if m.kind == "belief" and "crime_pattern" in m.tags
+        ]
+
+        # Modulate candidates with u_react, C_switch, and u_rel (§2.5, §4.5)
         modulated: list[ActionUtilityEvaluation] = []
         for cand in candidates:
             u_react = compute_reaction_utility(cand.action_type, self.pending_alerts, self.traits)
@@ -889,10 +967,17 @@ class VillagerAgent(BaseAgent):
                 self.intention,
                 self.personality.switching_cost_scale,
             )
-            u_prime = cand.expected_total_utility + LAMBDA_ATT * u_react - c_switch
+            u_rel = 0.0
+            if cand.action_type in (VillageActionType.GREET, VillageActionType.COURTSHIP_BOND):
+                u_rel = u_rel_peer
+            elif cand.action_type == VillageActionType.PATROL_GUARD and self.role == VillageRole.GUARD:
+                if any(cand.target_zone in b.tags or b.location == cand.target_zone for b in crime_beliefs):
+                    u_rel = 0.50
+
+            u_prime = cand.expected_total_utility + LAMBDA_ATT * u_react - c_switch + u_rel
             note = cand.rationale_note
-            if u_react > 0.0 or c_switch > 0.0:
-                note += f" [u_react={u_react:.2f}, c_switch={c_switch:.2f}]"
+            if u_react > 0.0 or c_switch > 0.0 or u_rel != 0.0:
+                note += f" [u_react={u_react:.2f}, c_switch={c_switch:.2f}, u_rel={u_rel:.2f}]"
             modulated.append(
                 cand.model_copy(
                     update={
@@ -1030,6 +1115,34 @@ class VillagerAgent(BaseAgent):
             self.personality.switching_cost_scale,
         )
 
+        # Context Query and Memory Retrieval (§4.2)
+        nearest_peer_id: str | None = None
+        if v_obs.visible_villagers:
+            nearest_peer = min(
+                v_obs.visible_villagers,
+                key=lambda vv: v_obs.position.manhattan_distance(vv.position),
+            )
+            nearest_peer_id = nearest_peer.agent_id
+
+        mem_query = MemoryQuery(
+            step=v_obs.step,
+            actors=(nearest_peer_id,) if nearest_peer_id else (),
+            location=v_obs.current_zone.value if v_obs.current_zone else "",
+            tags=(self.intention.kind.lower(),),
+            pad=self.affective_state.to_tuple(),
+        )
+        retrieved = retrieve_top_k(self.memory_stream, mem_query, k=5, rehearse=True)
+        retrieved_mids = [m.mid for m, _ in retrieved]
+
+        disp_best = self.dispositions.get(nearest_peer_id) if nearest_peer_id else None
+        best_u_rel = 0.0
+        if best.action_type in (VillageActionType.GREET, VillageActionType.COURTSHIP_BOND) and disp_best:
+            best_u_rel = 2.0 * disp_best.confidence * (disp_best.fondness - disp_best.grudge)
+        elif best.action_type == VillageActionType.PATROL_GUARD and self.role == VillageRole.GUARD:
+            crime_beliefs = [m for m in self.memory_stream.all_items() if m.kind == "belief" and "crime_pattern" in m.tags]
+            if any(best.target_zone in b.tags or b.location == best.target_zone for b in crime_beliefs):
+                best_u_rel = 0.50
+
         rationale: dict[str, Any] = {
             "village_action": exec_v_act.value,
             "strategic_goal_action": best.action_type.value,
@@ -1049,6 +1162,8 @@ class VillagerAgent(BaseAgent):
             "alerts": [a.percept.event.kind for a in self.pending_alerts],
             "u_react": round(best_u_react, 4),
             "c_switch": round(best_c_switch, 4),
+            "u_rel": round(best_u_rel, 4),
+            "retrieved_memory_ids": retrieved_mids,
             "intention": self.intention.kind,
             "intention_status": self.intention.status,
             "intention_score": round(self.intention.score, 3),
@@ -1114,17 +1229,68 @@ class VillagerAgent(BaseAgent):
                 weights=self.utility_weights.model_copy(update={"theta_risk": new_theta})
             )
 
-    def reflect_nightly(self) -> None:
+    def reflect_nightly(
+        self,
+        completed_action: VillageActionType | None = None,
+        is_drought: bool = False,
+        granary_wheat: float = 100.0,
+    ) -> None:
         """Consolidates episodic memory into dispositions at rest or night cycle (§4.4)."""
-        if not self.unreflected_episodes:
-            self.dispositions = ReflectionEngine.decay_grudges(self.dispositions, self.traits)
-            return
-        self.dispositions = ReflectionEngine.reflect_episodes(
-            unreflected=self.unreflected_episodes,
-            current_dispositions=self.dispositions,
-            traits=self.traits,
-        )
-        self.unreflected_episodes.clear()
+        self.dispositions = ReflectionEngine.decay_grudges(self.dispositions, self.traits)
+
+        # Legacy episodes consolidation
+        if self.unreflected_episodes:
+            self.dispositions = ReflectionEngine.reflect_episodes(
+                unreflected=self.unreflected_episodes,
+                current_dispositions=self.dispositions,
+                traits=self.traits,
+                is_drought=is_drought,
+                granary_wheat=granary_wheat,
+            )
+            self.unreflected_episodes.clear()
+
+        # Structured MemoryStream consolidation (§4.4)
+        unref_items = self.memory_stream.unreflected()
+        should_ref, _ = ReflectionEngine.should_reflect(unref_items, completed_action)
+        if should_ref and unref_items:
+            self.dispositions, gen_refs = ReflectionEngine.reflect_memory_items(
+                unreflected=unref_items,
+                current_dispositions=self.dispositions,
+                traits=self.traits,
+                self_id=self.agent_id,
+                is_drought=is_drought,
+                granary_wheat=granary_wheat,
+            )
+            cur_step = self._last_village_obs.step if self._last_village_obs else 0
+            for ref_dict in gen_refs:
+                self.memory_stream.create_and_add(
+                    step=cur_step,
+                    kind="reflection",
+                    actors=ref_dict["actors"],
+                    summary=ref_dict["summary"],
+                    tags=ref_dict["tags"],
+                    valence=ref_dict["valence"],
+                    fixed_importance=ref_dict["importance"],
+                    evidence_of=ref_dict["evidence_of"],
+                )
+            crime_beliefs = ReflectionEngine.detect_crime_patterns(
+                self.memory_stream.all_items(),
+                self.agent_id,
+                cur_step,
+            )
+            for b in crime_beliefs:
+                if not any(m.summary == b["summary"] for m in self.memory_stream.all_items()):
+                    self.memory_stream.create_and_add(
+                        step=cur_step,
+                        kind="belief",
+                        actors=b["actors"],
+                        location=b["location"],
+                        summary=b["summary"],
+                        tags=b["tags"],
+                        fixed_importance=b["importance"],
+                        evidence_of=b["evidence_of"],
+                    )
+            self.memory_stream.mark_reflected([m.mid for m in unref_items])
 
     def reset(self) -> None:
         """Resets internal and belief state for a new episode or replay."""
@@ -1146,6 +1312,7 @@ class VillagerAgent(BaseAgent):
         self.pending_alerts = []
         self.notices = []
         self.unreflected_episodes = []
+        self.memory_stream = MemoryStream(agent_id=self.agent_id, capacity=300)
         self.last_gaze_pos = None
         self.last_gaze_reason = ""
         self.sabha_summoned = False
