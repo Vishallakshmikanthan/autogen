@@ -14,6 +14,11 @@ import {
   VillageDialogueEventDTO,
 } from '../../../types/village';
 import type { StudioTab } from '../../layout/NavigationSidebar';
+import { VillageDecisionTracesOverlay } from './sync/VillageDecisionTracesOverlay';
+import { VillageLiveSimGridOverlay } from './sync/VillageLiveSimGridOverlay';
+import { VillageWorldBuilderOverlay } from './sync/VillageWorldBuilderOverlay';
+import { VillageAlgorithmLabOverlay } from './sync/VillageAlgorithmLabOverlay';
+import { VillageExperimentsOverlay } from './sync/VillageExperimentsOverlay';
 
 export interface VillageSocietyViewProps {
   activeTab?: StudioTab;
@@ -536,11 +541,11 @@ export const VillageSocietyView: React.FC<VillageSocietyViewProps> = ({
     return () => clearInterval(timer);
   }, [autoRunning, handleStep]);
 
-  const handleReset = async () => {
+  const handleReset = async (seed = 42, width = 40, height = 40, drought = false) => {
     setAutoRunning(false);
     setLoading(true);
     try {
-      const data = await resetVillageSimulation({ seed: 42, drought_active: false });
+      const data = await resetVillageSimulation({ seed, width, height, drought_active: drought });
       setState(data);
       setTimeOfDay(data.time_of_day);
       send3DCmd('SET_WEATHER', { weather: 'Clear' });
@@ -665,6 +670,74 @@ export const VillageSocietyView: React.FC<VillageSocietyViewProps> = ({
     selectedVillager.episodic_memories[0] ||
     selectedTrace?.rationale?.rationale_note ||
     '';
+
+  const renderSyncedOverlayContent = () => {
+    switch (activeTab) {
+      case 'DECISION_TRACES':
+        return (
+          <VillageDecisionTracesOverlay
+            state={state}
+            selectedVillagerId={selectedVillagerId}
+            onSelectVillager={(id) => {
+              const v = state.villagers.find((cand) => cand.agent_id === id);
+              if (v) handleSelectVillager(v, true);
+            }}
+          />
+        );
+      case 'LIVE_SIMULATION':
+        return (
+          <VillageLiveSimGridOverlay
+            state={state}
+            selectedVillagerId={selectedVillagerId}
+            onSelectVillager={(id) => {
+              const v = state.villagers.find((cand) => cand.agent_id === id);
+              if (v) handleSelectVillager(v, true);
+            }}
+            onStepSimulation={handleStep}
+            onResetSimulation={() => handleReset(42, 40, 40, false)}
+            onToggleDrought={handleToggleDrought}
+            onConvokeSabha={async () => {
+              send3DCmd('CONVOKE_SABHA_3D');
+              send3DCmd('PLAY_SOUND', { sound: 'bell' });
+              try {
+                const res = await fetch('/api/v1/village/sabha', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ emergency_reason: 'Emergency Grain Tithe & Pillory Sanctions' }),
+                });
+                const envelope = await res.json();
+                if (envelope?.data) setState(envelope.data);
+              } catch {
+                handleStep(1);
+              }
+            }}
+            loading={loading}
+          />
+        );
+      case 'WORLD_BUILDER':
+        return (
+          <VillageWorldBuilderOverlay
+            state={state}
+            onResetSimulation={(seed, width, height, drought) => {
+              handleReset(seed, width, height, drought);
+            }}
+            loading={loading}
+          />
+        );
+      case 'ALGORITHM_LAB':
+        return <VillageAlgorithmLabOverlay state={state} />;
+      case 'EXPERIMENTS':
+        return (
+          <VillageExperimentsOverlay
+            experiments={experiments}
+            onRunExperiments={handleRunExperiments}
+            running={runningExperiments}
+          />
+        );
+      default:
+        return overlayContent || null;
+    }
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#070d19] select-none font-sans text-slate-100">
@@ -827,7 +900,7 @@ export const VillageSocietyView: React.FC<VillageSocietyViewProps> = ({
           </button>
 
           <button
-            onClick={handleReset}
+            onClick={() => handleReset()}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium bg-white/5 hover:bg-white/15 text-slate-200 border border-white/15 transition-all"
           >
             <span>↻</span>
@@ -1839,9 +1912,9 @@ export const VillageSocietyView: React.FC<VillageSocietyViewProps> = ({
       {/* =====================================================================
           12. SECONDARY STUDIO TAB OVERLAY (When user clicks another top tab)
          ===================================================================== */}
-      {activeTab !== 'VILLAGE_SOCIETY' && overlayContent && (
-        <div className="absolute inset-x-6 top-[70px] bottom-6 z-30 rounded-3xl bg-[#08131f]/92 backdrop-blur-2xl border border-cyan-400/35 shadow-[0_20px_60px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-black/25">
+      {activeTab && activeTab !== 'VILLAGE_SOCIETY' && (
+        <div className="absolute inset-x-6 top-[70px] bottom-6 z-30 rounded-3xl bg-[#08131f]/94 backdrop-blur-2xl border border-cyan-400/35 shadow-[0_20px_60px_rgba(0,0,0,0.85)] flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-black/35">
             <div className="text-xs font-semibold uppercase tracking-wider text-cyan-300">
               AUTOGEN Studio Module · {activeTab.replace(/_/g, ' ')}
             </div>
@@ -1852,7 +1925,7 @@ export const VillageSocietyView: React.FC<VillageSocietyViewProps> = ({
               Return to 3D Village World ✕
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-6">{overlayContent}</div>
+          <div className="flex-1 overflow-y-auto p-6">{renderSyncedOverlayContent()}</div>
         </div>
       )}
     </div>

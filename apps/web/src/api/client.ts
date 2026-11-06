@@ -81,6 +81,8 @@ export async function stepVillageSimulation(steps = 1, timeOfDayOverride?: numbe
 
 export async function resetVillageSimulation(payload: {
   seed?: number;
+  width?: number;
+  height?: number;
   drought_active?: boolean;
   enable_llm_persona?: boolean;
 } = {}): Promise<VillageStatePayloadDTO> {
@@ -89,13 +91,19 @@ export async function resetVillageSimulation(payload: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       seed: payload.seed ?? 42,
-      width: 40,
-      height: 40,
+      width: payload.width ?? 40,
+      height: payload.height ?? 40,
       drought_active: payload.drought_active ?? false,
       enable_llm_persona: payload.enable_llm_persona ?? false,
     }),
   });
   const json: APIResponseEnvelope<VillageStatePayloadDTO> = await res.json();
+  return json.data;
+}
+
+export async function exportVillageWorldJson(): Promise<Record<string, unknown>> {
+  const res = await fetch(`${API_BASE}/village/export`);
+  const json = await res.json();
   return json.data;
 }
 
