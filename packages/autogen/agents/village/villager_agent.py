@@ -22,6 +22,13 @@ from autogen.intelligence.village.attention import (
     SalienceAttentionEngine,
 )
 from autogen.intelligence.village.bt import arbitrate_intentions
+from autogen.intelligence.village.conversation import (
+    Conversation,
+    DialogueAct,
+    DialogueActType,
+    compute_dialogue_act_utility,
+)
+from autogen.intelligence.village.gossip import Belief, BeliefStore
 from autogen.intelligence.village.intention import (
     LAMBDA_ATT,
     Intention,
@@ -132,6 +139,9 @@ class VillagerAgent(BaseAgent):
         self.dispositions: dict[str, Disposition] = {}
         self.unreflected_episodes: list[MemoryEpisode] = []
         self.memory_stream = MemoryStream(agent_id=self.agent_id, capacity=300)
+        self.belief_store = BeliefStore(agent_id=self.agent_id)
+        self.active_conversation: Conversation | None = None
+        self.last_dialogue_act: DialogueAct | None = None
         self.last_gaze_pos: Position | None = None
         self.last_gaze_reason: str = ""
 
@@ -295,6 +305,34 @@ class VillagerAgent(BaseAgent):
                         description=out.description,
                     )
                 )
+
+                # Store first-hand belief regarding observed harm/help (§3.3)
+                if is_harm:
+                    self.belief_store.put(
+                        Belief(
+                            belief_id=f"belief:{self.agent_id}:{out.actor_id}:{out.step}",
+                            subject=out.actor_id,
+                            claim="crime" if "crime" in out.category or "steal" in str(out.action_type).lower() else "defect",
+                            valence=-0.70,
+                            confidence=0.95,
+                            source_chain=(self.agent_id,),
+                            first_hand=True,
+                            heard_at_step=out.step,
+                        )
+                    )
+                elif is_help:
+                    self.belief_store.put(
+                        Belief(
+                            belief_id=f"belief:{self.agent_id}:{out.actor_id}:{out.step}",
+                            subject=out.actor_id,
+                            claim="cooperation" if out.category == "coop" else "fair_trade",
+                            valence=0.60,
+                            confidence=0.90,
+                            source_chain=(self.agent_id,),
+                            first_hand=True,
+                            heard_at_step=out.step,
+                        )
+                    )
 
             # Ingest into structured MemoryStream (§4.1)
             is_actor = out.actor_id == self.agent_id
@@ -1292,6 +1330,82 @@ class VillagerAgent(BaseAgent):
                     )
             self.memory_stream.mark_reflected([m.mid for m in unref_items])
 
+    def choose_dialogue_act(
+        self,
+        partner_id: str,
+        current_affinity: float,
+        p_overheard: float = 0.0,
+        partner_is_high_status: bool = False,
+    ) -> DialogueAct:
+        """Selects optimal communicative act during a conversation turn (§3.2)."""
+        candidate_acts: list[DialogueAct] = [
+            DialogueAct(
+                act_type=DialogueActType.SMALL_TALK,
+                speaker_id=self.agent_id,
+                target_id=partner_id,
+                valence=0.20,
+                utterance_hint="Casual friendly small talk",
+            ),
+            DialogueAct(
+                act_type=DialogueActType.FAREWELL,
+                speaker_id=self.agent_id,
+                target_id=partner_id,
+                valence=0.0,
+                utterance_hint="Polite goodbye",
+            ),
+        ]
+
+        # Consider GOSSIP or SHARE_NEWS if holding beliefs about other villagers
+        beliefs = self.belief_store.all_beliefs()
+        for b in beliefs:
+            if b.subject not in (self.agent_id, partner_id):
+                candidate_acts.append(
+                    DialogueAct(
+                        act_type=DialogueActType.GOSSIP if b.valence < 0 else DialogueActType.SHARE_NEWS,
+                        speaker_id=self.agent_id,
+                        target_id=partner_id,
+                        subject_id=b.subject,
+                        claim=b.claim,
+                        valence=b.valence,
+                        is_risky=(b.valence < -0.30),
+                        utterance_hint=f"Discussing {b.subject}'s {b.claim}",
+                    )
+                )
+                break
+
+        # If holding grudge toward partner, consider COMPLAIN
+        disp = self.dispositions.get(partner_id)
+        if disp and disp.grudge > 0.40:
+            candidate_acts.append(
+                DialogueAct(
+                    act_type=DialogueActType.COMPLAIN,
+                    speaker_id=self.agent_id,
+                    target_id=partner_id,
+                    valence=-0.50,
+                    utterance_hint="Venting frustration about past behavior",
+                )
+            )
+
+        best_act = candidate_acts[0]
+        best_u = -9999.0
+        for act in candidate_acts:
+            u = compute_dialogue_act_utility(
+                act,
+                traits=self.traits,
+                w_soc=self.utility_weights.w_soc,
+                w_rel=self.utility_weights.w_rel if hasattr(self.utility_weights, "w_rel") else 10.0,
+                current_affinity=current_affinity,
+                speaker_pad=self.affective_state.to_tuple(),
+                p_overheard=p_overheard,
+                is_subject_high_status=partner_is_high_status,
+            )
+            if u > best_u:
+                best_u = u
+                best_act = act
+
+        self.last_dialogue_act = best_act
+        return best_act
+
     def reset(self) -> None:
         """Resets internal and belief state for a new episode or replay."""
         super().reset()
@@ -1313,6 +1427,9 @@ class VillagerAgent(BaseAgent):
         self.notices = []
         self.unreflected_episodes = []
         self.memory_stream = MemoryStream(agent_id=self.agent_id, capacity=300)
+        self.belief_store = BeliefStore(agent_id=self.agent_id)
+        self.active_conversation = None
+        self.last_dialogue_act = None
         self.last_gaze_pos = None
         self.last_gaze_reason = ""
         self.sabha_summoned = False

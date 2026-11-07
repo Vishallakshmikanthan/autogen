@@ -72,6 +72,10 @@ ALLOWED_CANONICAL_SOURCES = [
     "ogren",
     "ögren",
     "bower",
+    "goffman",
+    "austin",
+    "pearl",
+    "dunbar",
 ]
 
 

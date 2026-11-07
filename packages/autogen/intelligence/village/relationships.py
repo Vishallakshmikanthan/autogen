@@ -21,8 +21,15 @@ class Relationship(BaseModel):
     affinity: float = Field(default=0.50, ge=0.0, le=1.0, description="Interpersonal warmth and liking")
     respect: float = Field(default=0.50, ge=0.0, le=1.0, description="Appraisal of competence and authority")
     familiarity: float = Field(default=0.0, ge=0.0, le=1.0, description="Frequency and depth of prior contact")
+    trust_score: float = Field(default=0.50, ge=0.0, le=1.0, description="Perceived dyadic trustworthiness")
 
-    def with_interaction(self, quality: float, eta: float = 0.15) -> Relationship:
+    def with_interaction(
+        self,
+        quality: float,
+        eta: float = 0.15,
+        trust_delta: float = 0.0,
+        respect_delta: float = 0.0,
+    ) -> Relationship:
         """Saturating relational update following an interaction (§3.5):
 
         affinity <- affinity + eta * quality * (1 - affinity) if quality > 0 else affinity + eta * quality * affinity
@@ -35,10 +42,15 @@ class Relationship(BaseModel):
             aff_next = aff + eta * quality * aff
 
         fam_next = min(1.0, self.familiarity + 0.05)
+        trust_next = float(np.clip(self.trust_score + trust_delta, 0.0, 1.0))
+        respect_next = float(np.clip(self.respect + respect_delta, 0.0, 1.0))
+
         return self.model_copy(
             update={
                 "affinity": float(round(np.clip(aff_next, 0.0, 1.0), 4)),
+                "respect": float(round(respect_next, 4)),
                 "familiarity": float(round(fam_next, 4)),
+                "trust_score": float(round(trust_next, 4)),
             }
         )
 
@@ -57,12 +69,38 @@ class VillageRelationshipStore:
     def get_relationship(self, source_id: str, target_id: str) -> Relationship:
         """Returns directed relationship (source_id -> target_id), defaulting to neutral."""
         if source_id == target_id:
-            return Relationship(affinity=1.0, respect=1.0, familiarity=1.0)
+            return Relationship(affinity=1.0, respect=1.0, familiarity=1.0, trust_score=1.0)
         return self._relations.get((source_id, target_id), Relationship())
 
     def get_affinity(self, source_id: str, target_id: str) -> float:
         """Returns directed affinity scalar in [0, 1]."""
         return self.get_relationship(source_id, target_id).affinity
+
+    def get_trust(self, source_id: str, target_id: str) -> float:
+        """Returns directed trust scalar in [0, 1]."""
+        return self.get_relationship(source_id, target_id).trust_score
+
+    def get_respect(self, source_id: str, target_id: str) -> float:
+        """Returns directed respect scalar in [0, 1]."""
+        return self.get_relationship(source_id, target_id).respect
+
+    def set_trust(self, source_id: str, target_id: str, trust_score: float) -> None:
+        """Sets directed trust scalar in [0, 1]."""
+        if source_id == target_id:
+            return
+        rel = self.get_relationship(source_id, target_id)
+        self._relations[(source_id, target_id)] = rel.model_copy(
+            update={"trust_score": float(round(min(1.0, max(0.0, trust_score)), 4))}
+        )
+
+    def set_respect(self, source_id: str, target_id: str, respect: float) -> None:
+        """Sets directed respect scalar in [0, 1]."""
+        if source_id == target_id:
+            return
+        rel = self.get_relationship(source_id, target_id)
+        self._relations[(source_id, target_id)] = rel.model_copy(
+            update={"respect": float(round(min(1.0, max(0.0, respect)), 4))}
+        )
 
     def set_affinity(self, source_id: str, target_id: str, affinity: float) -> None:
         """Sets directed affinity scalar in [0, 1] nudged by reflective dispositions (§4.5)."""
@@ -73,17 +111,33 @@ class VillageRelationshipStore:
             update={"affinity": float(round(min(1.0, max(0.0, affinity)), 4))}
         )
 
-    def record_interaction(self, source_id: str, target_id: str, quality: float) -> None:
+    def record_interaction(
+        self,
+        source_id: str,
+        target_id: str,
+        quality: float,
+        trust_delta: float = 0.0,
+        respect_delta: float = 0.0,
+    ) -> None:
         """Updates directed relationship following a shared event or greeting."""
         if source_id == target_id:
             return
         rel = self.get_relationship(source_id, target_id)
-        self._relations[(source_id, target_id)] = rel.with_interaction(quality)
+        self._relations[(source_id, target_id)] = rel.with_interaction(
+            quality, trust_delta=trust_delta, respect_delta=respect_delta
+        )
 
-    def record_dyadic_interaction(self, agent_a: str, agent_b: str, quality: float) -> None:
+    def record_dyadic_interaction(
+        self,
+        agent_a: str,
+        agent_b: str,
+        quality: float,
+        trust_delta: float = 0.0,
+        respect_delta: float = 0.0,
+    ) -> None:
         """Updates both directed edges (A->B and B->A) synchronously."""
-        self.record_interaction(agent_a, agent_b, quality)
-        self.record_interaction(agent_b, agent_a, quality)
+        self.record_interaction(agent_a, agent_b, quality, trust_delta=trust_delta, respect_delta=respect_delta)
+        self.record_interaction(agent_b, agent_a, quality, trust_delta=trust_delta, respect_delta=respect_delta)
 
     def step_decay(self) -> None:
         """Decays familiarity across all relationships once per tick."""
@@ -99,6 +153,7 @@ class VillageRelationshipStore:
                     "affinity": rel.affinity,
                     "respect": rel.respect,
                     "familiarity": rel.familiarity,
+                    "trust_score": rel.trust_score,
                 }
         return res
 

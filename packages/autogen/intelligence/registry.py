@@ -817,5 +817,103 @@ def populate_default_catalog() -> None:
         )
     )
 
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="conversation_fsm",
+            name="Multi-Tick Conversational State Machine and Engagement Dynamics",
+            family=AlgorithmFamily.MULTIAGENT,
+            doc_path="docs/algorithms/village/conversation_fsm.md",
+            complexity_time="O(1) state transition and engagement update per active conversation",
+            complexity_space="O(C) memory for active conversations",
+            assumptions=[
+                "Conversations follow distinct multi-tick progression (approach, greeting, talking, closing)",
+                "Dynamic engagement determines premature departure and social snub penalties",
+            ],
+            hyperparameters={
+                "theta_leave": "Engagement threshold below which villager departs (default 0.20)",
+                "max_turns": "Maximum turns per conversation (default 6)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Park et al.",
+                    title="Generative Agents: Interactive Simulacra of Human Behavior",
+                    year=2023,
+                    chapter_or_pages="UIST '23, pp. 1-22",
+                ),
+                CitationRecord(
+                    author_or_source="Goffman",
+                    title="Interaction Ritual: Essays on Face-to-Face Behavior",
+                    year=1967,
+                    chapter_or_pages="Doubleday Anchor, pp. 1-45",
+                ),
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="dialogue_act_utility",
+            name="Utility-Grounded Dialogue Act Selection with Eavesdropping Risk",
+            family=AlgorithmFamily.DECISION,
+            doc_path="docs/algorithms/village/dialogue_act_utility.md",
+            complexity_time="O(A) evaluation across candidate speech acts",
+            complexity_space="O(1) temporary evaluation buffer",
+            assumptions=[
+                "Speech acts are arbitrated via multi-attribute utility matching personality and relationships",
+                "Eavesdropping risk attenuates willingness to share sensitive accusations or gossip",
+            ],
+            hyperparameters={
+                "theta_risk": "Risk penalty scale on overhearing probability (default 0.35)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Russell & Norvig",
+                    title="Artificial Intelligence: A Modern Approach",
+                    year=2020,
+                    chapter_or_pages="Pearson, Chapter 16 (Making Complex Decisions)",
+                ),
+                CitationRecord(
+                    author_or_source="Austin",
+                    title="How to Do Things with Words",
+                    year=1962,
+                    chapter_or_pages="Oxford University Press, Lectures 1-4",
+                ),
+            ],
+        )
+    )
+
+    AlgorithmRegistry.register(
+        AlgorithmMetadata(
+            algorithm_id="gossip_provenance",
+            name="Epidemic Lossy Gossip Transmission with Provenance and Noisy-OR Corroboration",
+            family=AlgorithmFamily.PROBABILISTIC,
+            doc_path="docs/algorithms/village/gossip_provenance.md",
+            complexity_time="O(H) ancestry verification and belief fusion per gossip act",
+            complexity_space="O(B) local belief store bounded by entity count",
+            assumptions=[
+                "Speaker emotional arousal and interpersonal dislike spin claim valence",
+                "Listener Openness and source credibility govern probabilistic belief adoption",
+                "Noisy-OR fuses independent corroborations while echo loops are suppressed",
+            ],
+            hyperparameters={
+                "decay_per_hop": "Confidence decay factor for indirect hearsay (default 0.90)",
+            },
+            citations=[
+                CitationRecord(
+                    author_or_source="Pearl",
+                    title="Probabilistic Reasoning in Intelligent Systems",
+                    year=1988,
+                    chapter_or_pages="Morgan Kaufmann, Chapter 4 (Noisy-OR Models)",
+                ),
+                CitationRecord(
+                    author_or_source="Dunbar",
+                    title="Grooming, Gossip, and the Evolution of Language",
+                    year=1996,
+                    chapter_or_pages="Harvard University Press, Chapter 4",
+                ),
+            ],
+        )
+    )
+
 # Automatically populate on module load
 populate_default_catalog()

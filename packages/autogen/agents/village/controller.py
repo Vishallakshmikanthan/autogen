@@ -12,6 +12,13 @@ from autogen.agents.village.villager_agent import VillagerAgent
 from autogen.core.rng import SeedManager
 from autogen.core.types import DecisionTrace
 from autogen.intelligence.village.contagion import EmotionalContagionEngine
+from autogen.intelligence.village.conversation import (
+    Conversation,
+    ConversationEngine,
+    ConvState,
+    DialogueActType,
+)
+from autogen.intelligence.village.gossip import Belief, GossipEngine
 from autogen.intelligence.village.institutions_and_lineage import (
     ChildBirthRecord,
     FuneralRecord,
@@ -22,6 +29,7 @@ from autogen.intelligence.village.institutions_and_lineage import (
     LineageRecord,
     VillageAssemblyRecord,
 )
+from autogen.intelligence.village.memory_stream import MemoryItem
 from autogen.intelligence.village.persona.llm_bridge import LLMPersonaBridge, PersonaProfile
 from autogen.intelligence.village.persona.symbolic_dialogue import VillageDialogueEvent
 from autogen.intelligence.village.persona.village_bus import VillageDialogueBus
@@ -55,6 +63,8 @@ class HumanlikeConfig(BaseModel):
     enable_needs: bool = True
     enable_routines: bool = True
     enable_memory_stream: bool = True
+    enable_conversation: bool = True
+    enable_gossip: bool = True
 
 
 class VillageSimulationController:
@@ -99,6 +109,7 @@ class VillageSimulationController:
         self.traces_by_agent: dict[str, DecisionTrace] = {}
         self.last_utterances: dict[str, str] = {}
         self.last_mean_contagion_delta: float = 0.0
+        self.active_conversations: dict[str, Conversation] = {}
         self._init_agents()
 
     def _init_agents(self) -> None:
@@ -196,10 +207,7 @@ class VillageSimulationController:
         self.active_sabha = None
         self.sabha_ticks_remaining = 0
         self.traces_by_agent = {}
-        self._init_agents()
-        return self.get_full_state_payload()
-        self.sabha_ticks_remaining = 0
-        self.traces_by_agent = {}
+        self.active_conversations = {}
         self._init_agents()
         return self.get_full_state_payload()
 
@@ -586,6 +594,214 @@ class VillageSimulationController:
 
         self.world.update_affective_and_lifecycle_states(pad_sync, lifecycle_sync)
 
+        # Phase 5d: Multi-tick Conversation State Machine & Lossy Gossip Transmission (§3.1, §3.3)
+        if self.humanlike_config.enable_conversation:
+            ended_convs: list[str] = []
+            for conv_id, conv in sorted(self.active_conversations.items()):
+                p1, p2 = conv.participants
+                v1 = self.world.villagers.get(p1)
+                v2 = self.world.villagers.get(p2)
+
+                if not v1 or not v1.is_alive or not v2 or not v2.is_alive:
+                    conv.state = ConvState.ABANDONED
+                    conv.abandoned_by = p1 if (not v1 or not v1.is_alive) else p2
+                    ConversationEngine.settle_conversation(
+                        conv, self.relationships, step=self.world.step_count
+                    )
+                    ended_convs.append(conv_id)
+                    continue
+
+                dist = v1.position.manhattan_distance(v2.position)
+                if dist > 5:
+                    conv.state = ConvState.ABANDONED
+                    conv.abandoned_by = p1
+                    ConversationEngine.settle_conversation(
+                        conv, self.relationships, step=self.world.step_count
+                    )
+                    ended_convs.append(conv_id)
+                    continue
+
+                ag1 = self.agents[p1]
+                ag2 = self.agents[p2]
+                active_alerts = list(ag1.pending_alerts) + list(ag2.pending_alerts)
+
+                speaker_id = conv.turn_owner
+                listener_id = conv.other_participant(speaker_id)
+                speaker_agent = self.agents[speaker_id]
+                listener_agent = self.agents[listener_id]
+                speaker_v = self.world.villagers[speaker_id]
+                listener_v = self.world.villagers[listener_id]
+
+                p_overheard = 0.0
+                for bystander_id, bystander_v in self.world.villagers.items():
+                    if bystander_id in (p1, p2) or not bystander_v.is_alive:
+                        continue
+                    b_dist = speaker_v.position.manhattan_distance(bystander_v.position)
+                    aud = max(0.0, 1.0 - (b_dist / 8.0))
+                    if aud > p_overheard:
+                        p_overheard = aud
+
+                cur_aff = self.relationships.get_affinity(speaker_id, listener_id)
+
+                chosen_act = speaker_agent.choose_dialogue_act(
+                    partner_id=listener_id,
+                    current_affinity=cur_aff,
+                    p_overheard=p_overheard,
+                    partner_is_high_status=(listener_v.societal_status > 0.12),
+                )
+
+                new_state, emitted_act, reason = ConversationEngine.step_conversation(
+                    conv,
+                    active_alerts=active_alerts,
+                    relationships=self.relationships,
+                    chosen_act=chosen_act,
+                )
+
+                if emitted_act is not None:
+                    speaker_agent.last_dialogue_act = emitted_act
+
+                    if (
+                        emitted_act.act_type in (DialogueActType.GOSSIP, DialogueActType.SHARE_NEWS)
+                        and self.humanlike_config.enable_gossip
+                    ):
+                        cand_belief: Belief | None = None
+                        if emitted_act.subject_id and emitted_act.claim:
+                            cand_belief = speaker_agent.belief_store.get(
+                                emitted_act.subject_id, emitted_act.claim
+                            )
+                        if cand_belief is None:
+                            all_b = speaker_agent.belief_store.all_beliefs()
+                            if all_b:
+                                cand_belief = all_b[0]
+
+                        if cand_belief is not None:
+                            g_rng = self.seed_manager.spawn_stream(
+                                f"gossip:{conv_id}:{conv.turns}:{self.world.step_count}"
+                            )
+                            accepted_belief, accepted, g_reason = GossipEngine.transmit(
+                                speaker_id=speaker_id,
+                                listener_id=listener_id,
+                                belief=cand_belief,
+                                speaker_arousal=speaker_agent.affective_state.arousal,
+                                speaker_affinity_to_subject=self.relationships.get_affinity(
+                                    speaker_id, cand_belief.subject
+                                ),
+                                listener_trust_in_speaker=self.trust_graph.get_trust(
+                                    listener_id, speaker_id
+                                ),
+                                listener_status_of_speaker=speaker_v.societal_status,
+                                listener_affinity_for_speaker=self.relationships.get_affinity(
+                                    listener_id, speaker_id
+                                ),
+                                listener_openness=listener_agent.traits.openness,
+                                listener_prior_belief=listener_agent.belief_store.get(
+                                    cand_belief.subject, cand_belief.claim
+                                ),
+                                rng=g_rng,
+                                step=self.world.step_count,
+                            )
+                            if accepted and accepted_belief is not None:
+                                listener_agent.belief_store.put(accepted_belief)
+                                if self.humanlike_config.enable_memory_stream:
+                                    listener_agent.memory_stream.add(
+                                        MemoryItem(
+                                            mid=f"{listener_id}:{self.world.step_count}:{len(listener_agent.memory_stream)}",
+                                            step=self.world.step_count,
+                                            kind="conversation",
+                                            actors=tuple(sorted((speaker_id, listener_id))),
+                                            location=speaker_v.current_goal_zone or "village_commons",
+                                            summary=f"Heard rumor from {speaker_v.name}: {accepted_belief.subject} engaged in {accepted_belief.claim}.",
+                                            tags=tuple(sorted(("gossip", accepted_belief.claim, accepted_belief.subject))),
+                                            valence=accepted_belief.valence,
+                                            pad=listener_agent.affective_state.to_tuple(),
+                                            importance=0.60,
+                                            last_access_step=self.world.step_count,
+                                        )
+                                    )
+
+                if new_state in (
+                    ConvState.CLOSING,
+                    ConvState.INTERRUPTED,
+                    ConvState.ABANDONED,
+                    ConvState.IDLE,
+                ):
+                    settle_res = ConversationEngine.settle_conversation(
+                        conv, self.relationships, step=self.world.step_count
+                    )
+                    if self.humanlike_config.enable_memory_stream:
+                        for pid in (p1, p2):
+                            other_p = p2 if pid == p1 else p1
+                            other_name = (
+                                self.world.villagers[other_p].name
+                                if other_p in self.world.villagers
+                                else other_p
+                            )
+                            self.agents[pid].memory_stream.add(
+                                MemoryItem(
+                                    mid=f"{pid}:{self.world.step_count}:{len(self.agents[pid].memory_stream)}",
+                                    step=self.world.step_count,
+                                    kind="conversation",
+                                    actors=tuple(sorted((p1, p2))),
+                                    location=self.world.villagers[pid].current_goal_zone or "village_commons",
+                                    summary=f"Conversed with {other_name}: {settle_res.get('outcome', 'finished')}.",
+                                    tags=tuple(sorted(("social", "conversation", other_p))),
+                                    valence=float(settle_res.get("quality", 0.0)),
+                                    pad=self.agents[pid].affective_state.to_tuple(),
+                                    importance=0.45,
+                                    last_access_step=self.world.step_count,
+                                )
+                            )
+                    ended_convs.append(conv_id)
+
+            for cid in ended_convs:
+                if cid in self.active_conversations:
+                    c_obj = self.active_conversations[cid]
+                    for pid in c_obj.participants:
+                        if pid in self.agents and self.agents[pid].active_conversation is c_obj:
+                            self.agents[pid].active_conversation = None
+                    del self.active_conversations[cid]
+
+            free_agents = [
+                aid
+                for aid, a in sorted(self.agents.items())
+                if a.active_conversation is None and self.world.villagers[aid].is_alive
+            ]
+            for i in range(len(free_agents)):
+                aid1 = free_agents[i]
+                if self.agents[aid1].active_conversation is not None:
+                    continue
+                v1 = self.world.villagers[aid1]
+                for j in range(i + 1, len(free_agents)):
+                    aid2 = free_agents[j]
+                    if self.agents[aid2].active_conversation is not None:
+                        continue
+                    v2 = self.world.villagers[aid2]
+                    dist = v1.position.manhattan_distance(v2.position)
+                    is_greet = (
+                        v1.last_action == VillageActionType.GREET
+                        or v2.last_action == VillageActionType.GREET
+                    )
+                    is_waking = not (self.world.time_of_day >= 22.0 or self.world.time_of_day <= 5.0)
+                    not_storm = not self.world.weather_process.is_raining
+                    if not_storm and is_waking and ((is_greet and dist <= 3) or (dist <= 2 and v1.energy > 20 and v2.energy > 20)):
+                        initiator = (
+                            aid1
+                            if (v1.last_action == VillageActionType.GREET or self.agents[aid1].traits.extraversion >= self.agents[aid2].traits.extraversion)
+                            else aid2
+                        )
+                        recipient = aid2 if initiator == aid1 else aid1
+                        c_id = f"conv_{initiator}_{recipient}_{self.world.step_count}"
+                        new_c = ConversationEngine.start_conversation(
+                            conv_id=c_id,
+                            initiator_id=initiator,
+                            recipient_id=recipient,
+                            step=self.world.step_count,
+                        )
+                        self.active_conversations[c_id] = new_c
+                        self.agents[initiator].active_conversation = new_c
+                        self.agents[recipient].active_conversation = new_c
+                        break
+
         # Phase 6: Notify agent learning & downstream Persona Dialogue Bus (All Villagers Converse)
         positions_map = {aid: v.position for aid, v in self.world.villagers.items() if v.is_alive}
 
@@ -682,15 +898,19 @@ class VillageSimulationController:
             if saved_trace is None:
                 continue
 
-            utterance = dialogues.get(
-                aid,
-                self.persona_bridge._make_symbolic_villager_dialogue(
-                    self.personas[aid].name,
-                    self.personas[aid].role,
-                    data["action"],
-                    data["nearest_peer_name"],
-                ),
-            )
+            ag_obj = self.agents[aid]
+            if ag_obj.last_dialogue_act is not None and ag_obj.last_dialogue_act.utterance_hint:
+                utterance = f"[{ag_obj.last_dialogue_act.act_type.value}] {ag_obj.last_dialogue_act.utterance_hint}"
+            else:
+                utterance = dialogues.get(
+                    aid,
+                    self.persona_bridge._make_symbolic_villager_dialogue(
+                        self.personas[aid].name,
+                        self.personas[aid].role,
+                        data["action"],
+                        data["nearest_peer_name"],
+                    ),
+                )
             self.last_utterances[aid] = utterance
 
             d_event = VillageDialogueEvent(
@@ -745,6 +965,16 @@ class VillageSimulationController:
         if self.humanlike_config.enable_needs:
             payload["needs_phys"] = {
                 aid: round(self.agents[aid].needs_engine.state.d_phys, 4)
+                for aid in sorted(self.agents.keys())
+            }
+        if self.humanlike_config.enable_conversation:
+            payload["conversations"] = {
+                cid: f"{c.state.value}:{c.turn_owner}:{c.turns}"
+                for cid, c in sorted(self.active_conversations.items())
+            }
+        if self.humanlike_config.enable_gossip:
+            payload["belief_digests"] = {
+                aid: self.agents[aid].belief_store.digest()
                 for aid in sorted(self.agents.keys())
             }
         raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
@@ -862,6 +1092,30 @@ class VillageSimulationController:
                         "unreflected_count": len(agent.memory_stream.unreflected()),
                         "recent_reflections": [m.summary for m in agent.memory_stream.all_items() if m.kind == "reflection"][-3:],
                     },
+                    "conversation": {
+                        "active": agent.active_conversation is not None,
+                        "conv_id": agent.active_conversation.conv_id if agent.active_conversation else None,
+                        "partner_id": agent.active_conversation.other_participant(aid) if agent.active_conversation else None,
+                        "state": agent.active_conversation.state.value if agent.active_conversation else "IDLE",
+                        "turn_owner": agent.active_conversation.turn_owner if agent.active_conversation else None,
+                        "turns": agent.active_conversation.turns if agent.active_conversation else 0,
+                        "last_act": agent.last_dialogue_act.act_type.value if agent.last_dialogue_act else None,
+                        "engagement": round(agent.active_conversation.engagement.get(aid, 0.0), 3) if agent.active_conversation else 0.0,
+                    },
+                    "beliefs": [
+                        {
+                            "subject": b.subject,
+                            "claim": b.claim,
+                            "valence": round(b.valence, 3),
+                            "confidence": round(b.confidence, 3),
+                            "source_chain": list(b.source_chain),
+                            "first_hand": b.first_hand,
+                            "times_heard": b.times_heard,
+                            "hop_count": b.hop_count,
+                        }
+                        for b in agent.belief_store.all_beliefs()[:5]
+                    ],
+                    "beliefs_count": len(agent.belief_store),
                 }
             )
 
@@ -925,6 +1179,21 @@ class VillageSimulationController:
             "dialogue_events": [
                 e.model_dump() for e in self.dialogue_bus.get_recent_events(limit=20)
             ],
+            "conversations": {
+                "active_count": len(self.active_conversations),
+                "active": [
+                    {
+                        "conv_id": c.conv_id,
+                        "participants": list(c.participants),
+                        "state": c.state.value,
+                        "turn_owner": c.turn_owner,
+                        "turns": c.turns,
+                        "topic": c.topic_stack[-1] if c.topic_stack else "general",
+                        "last_act": c.history[-1].act_type.value if c.history else None,
+                    }
+                    for c in sorted(self.active_conversations.values(), key=lambda x: x.conv_id)
+                ],
+            },
             "step_outcomes": [o.model_dump() for o in self.world.step_outcomes],
             "mean_contagion_delta": round(self.last_mean_contagion_delta, 4),
             "cinematic_export": self.world.export_village_world_json(),

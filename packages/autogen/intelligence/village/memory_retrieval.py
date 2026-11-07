@@ -152,3 +152,4 @@ def retrieve_top_k(
             top_results[idx] = (updated_item, breakdown)
 
     return top_results
+

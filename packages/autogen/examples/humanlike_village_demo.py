@@ -72,7 +72,7 @@ def format_pad(pad: tuple[float, float, float] | list[float]) -> str:
 def run_demo(seed: int = 42, total_steps: int = 48, storm_step: int = 4) -> None:
     print("=" * 88)
     print("      AUTOGEN AI -- HUMANLIKE VILLAGER ARCHITECTURE (MODULE M22-H) DEMO")
-    print("      INCREMENT 3: MEMORY STREAM, MULTIMODAL RETRIEVAL, FORGETTING & REFLECTION")
+    print("      INCREMENT 4: CONVERSATION FSM, DIALOGUE ACTS, GOSSIP DYNAMICS & RELATIONAL SETTLEMENT")
     print("=" * 88)
     print(
         f"Configuration: Seed={seed} | Total Steps={total_steps} ({(total_steps / 48.0):.1f} days) | Storm Step={storm_step}\n"
@@ -265,6 +265,12 @@ def run_demo(seed: int = 42, total_steps: int = 48, storm_step: int = 4) -> None
                 else:
                     print(f"     |-- Dynamics: {needs_summary} | {gaze_info}")
 
+                conv_info = v.get("conversation", {})
+                if conv_info.get("active"):
+                    partner = conv_info.get("partner_id")
+                    partner_name = controller.world.villagers[partner].name if partner and partner in controller.world.villagers else partner
+                    print(f"     |-- Active Conversation: with {partner_name} | State={conv_info.get('state')} | Turn={conv_info.get('turns')} | Last Act={conv_info.get('last_act')}")
+
             if is_storm_window:
                 print(
                     f"     [Contagion Synchronous Pass]: Measured mean |Delta PAD| = {mean_delta:.4f} across living villagers."
@@ -356,27 +362,60 @@ def run_demo(seed: int = 42, total_steps: int = 48, storm_step: int = 4) -> None
             print("  Interpersonal Dispositions: Stable baseline (no conflicting offenses)")
         print()
 
-    # 8. Section 7: Telemetry & Invariants
+    # 8. Section 7: Conversational FSM, Speech Acts & Lossy Gossip Provenance (Increment 4)
+    print("----------------------------------------------------------------------------------------")
+    print(" SECTION 7. CONVERSATIONAL FSM, DIALOGUE ACTS & EPIDEMIC GOSSIP (Increment 4)")
+    print("----------------------------------------------------------------------------------------")
+    print("Villagers engage in multi-tick conversations, arbitrate dialogue acts with overhearing risk,")
+    print("and transmit rumors with speaker spin, listener credibility, and epistemic source chains.\n")
+
+    active_conv_data = state.get("conversations", {})
+    print(f"Active Multi-Tick Conversations: {active_conv_data.get('active_count', len(controller.active_conversations))}")
+    for c in active_conv_data.get("active", []):
+        p1_name = controller.world.villagers[c['participants'][0]].name if c['participants'][0] in controller.world.villagers else c['participants'][0]
+        p2_name = controller.world.villagers[c['participants'][1]].name if c['participants'][1] in controller.world.villagers else c['participants'][1]
+        print(f"  * Conv ID: {c['conv_id']} | Between {p1_name} & {p2_name} | State={c['state']} | Turns={c['turns']} | Topic={c['topic']} | Last Act={c.get('last_act')}")
+
+    print("\nVillager Subjective Beliefs & Rumor Provenance:")
+    for v in state["villagers"]:
+        aid = v["agent_id"]
+        agent = controller.agents[aid]
+        beliefs = agent.belief_store.all_beliefs()
+        print(f"  Villager: {v['name']} ({v['role']}) | Total Beliefs: {len(beliefs)}")
+        for b in beliefs[:4]:
+            subj_name = controller.world.villagers[b.subject].name if b.subject in controller.world.villagers else b.subject
+            chain_str = " -> ".join(controller.world.villagers[s].name if s in controller.world.villagers else s for s in b.source_chain)
+            origin = "Firsthand" if b.first_hand else f"Gossip (hop={b.hop_count}, provenance=[{chain_str}])"
+            print(f"    - Claim: [{b.claim}] about {subj_name} | Valence={b.valence:+.2f} | Confidence={b.confidence:.2f} | {origin} | Heard x{b.times_heard}")
+    print()
+
+    # 9. Section 8: Telemetry & Invariants
     final_hash = controller.compute_canonical_hash()
     avg_contagion = sum(contagion_deltas) / max(1, len(contagion_deltas))
     max_stream_size = max(len(a.memory_stream) for a in controller.agents.values())
     total_unreflected = sum(len(a.memory_stream.unreflected()) for a in controller.agents.values())
     total_shelter_actions = sum(shelter_counts.values())
+    total_beliefs = sum(len(a.belief_store) for a in controller.agents.values())
+    active_convs = len(controller.active_conversations)
 
     print("----------------------------------------------------------------------------------------")
-    print(" SECTION 7. VERIFICATION EVIDENCE & CANONICAL REPRODUCIBILITY HASH")
+    print(" SECTION 8. VERIFICATION EVIDENCE & CANONICAL REPRODUCIBILITY HASH")
     print("----------------------------------------------------------------------------------------")
     print(f"Canonical Simulation State SHA-256    : {final_hash}")
     print(f"Total Steps Simulated                : {state['step']} ({(state['step'] / 48.0):.1f} days)")
     print(f"Total Village Population             : {len(state['villagers'])}")
     print(f"Greetings Exchanged (Real Count, C3) : {len(greetings_seen)} (proximity-bounded r <= 3)")
     print(f"Storm Shelter Actions Taken (C5)     : {total_shelter_actions} (reaction bonus active)")
+    print(f"Multi-Tick Conversations Active (M4) : {active_convs} (FSM engagement-bounded)")
+    print(f"Total Beliefs Stored in Society (M4) : {total_beliefs} (lossy provenance & loop-suppressed)")
     print(f"Max Agent Memory Stream Size (Cap 300: {max_stream_size} items (capacity strictly bounded)")
     print(f"Unreflected Memories In Stream       : {total_unreflected} items (protected from eviction)")
     print(f"Mean Contagion |Delta PAD|           : {avg_contagion:.4f}")
     print("Hourly Zone Occupancy (C2 Fix)       : Real coordinates derived via world.get_zone_at(pos)")
     print("Maslow Prepotency Gating (g1..g5)    : Active & dynamically throttling higher-level drives")
     print("Behavior Tree Lifecycles & Hysteresis: Active (Intentions advance, complete, or interrupt)")
+    print("Speech Act Utility & Eavesdrop Risk  : Active (penalized by P_overheard * kappa)")
+    print("Gossip Epidemic Corroboration        : Active (Noisy-OR confidence fusion)")
     print("Deterministic Seed Reproducibility   : Guaranteed by Named RNG Streams & Hash Digests")
     print("=" * 88)
 
