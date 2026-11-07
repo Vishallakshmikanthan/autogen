@@ -139,3 +139,4 @@ function StepConversation(conv: Conversation, alerts: List[Alert], relationships
 - Goffman, E. (1967). *Interaction Ritual: Essays on Face-to-Face Behavior*. Doubleday Anchor, pp. 1-45.
 - Clark, H. H. (1996). *Using Language*. Cambridge University Press, Chapters 1-3.
 - Park, J. S., et al. (2023). Generative agents: Interactive simulacra of human behavior. *UIST '23*, pp. 1-22.
+

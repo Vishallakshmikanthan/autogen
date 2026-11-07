@@ -373,3 +373,4 @@ class ConversationEngine:
             "turns": conv.turns,
             "history_count": len(conv.history),
         }
+

@@ -131,3 +131,4 @@ function TransmitGossip(speaker, listener, belief, rng, step) -> (Belief, bool):
 - Dunbar, R. I. (1996). *Grooming, Gossip, and the Evolution of Language*. Harvard University Press, Chapter 4.
 - Pearl, J. (1988). *Probabilistic Reasoning in Intelligent Systems*. Morgan Kaufmann, Chapter 4 (Noisy-OR Models).
 - Allport, G. W., & Postman, L. (1947). *The Psychology of Rumor*. Henry Holt and Company.
+

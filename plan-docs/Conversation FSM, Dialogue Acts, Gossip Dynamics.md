@@ -57,3 +57,4 @@ where:
 - **`agents/village/villager_agent.py`**: Integration with candidate pathways, active intentions, and memory stream.
 - **`agents/village/controller.py`**: Phase 4 conversation turn resolution and Phase 6 symbolic dialogue act rendering.
 - **`tests/unit/village/`**: Independent unit & oracle test coverage.
+

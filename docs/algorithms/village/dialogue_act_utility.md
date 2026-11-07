@@ -105,3 +105,4 @@ function EvaluateDialogueActUtility(speaker, listener, act, p_overheard) -> floa
 - Austin, J. L. (1962). *How to Do Things with Words*. Oxford University Press, Lectures 1-4.
 - Searle, J. R. (1969). *Speech Acts: An Essay in the Philosophy of Language*. Cambridge University Press.
 - Russell, S., & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach*. Pearson, Chapter 16 (Making Complex Decisions).
+
